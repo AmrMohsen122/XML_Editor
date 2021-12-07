@@ -34,7 +34,7 @@ public class Compression {
 		return false;
 	}
 
-	public static void construct_hash_freq(String input, HashMap<String, Integer> pairs, int[] freq) {
+	private static void construct_hash_freq(String input, HashMap<String, Integer> pairs, int[] freq) {
 		String pair;
 		pairs.clear();
 		for (int i = 0; i <= input.length() - 2; i++) {
@@ -53,33 +53,29 @@ public class Compression {
 		freq[input.charAt(input.length() - 1)]++;
 	}
 
-	public static String encode(String s, int iterations) {
+	/**
+	 * a function that encodes a given string using BPE
+	 * 
+	 * @param s          the string to be encoded
+	 * @param iterations the number of iterations the algorithm should run
+	 * @return encoded string
+	 **/
+	public static String encode_string(String s, int iterations) {
+		//TODO  a way to return the hashmap for later decoding
 		String encoded = "";
 		HashMap<String, Integer> pairs = new HashMap<String, Integer>();
 		// ferquency arrays that indicated what characters are used
-		int[] used_char = new int[256]; 
+		int[] used_char = new int[256];
 		// create the hashmap that contains all the repeated characters
 		construct_hash_freq(s, pairs, used_char);
 		do {
-			String pair;
 			// replacing most occruing pair with an unused character
 			String most_repeated = max_repeated_pair(pairs);
 			char unused = find_unused_char(used_char);
 			// mark the unused char as used for later cycles
 			used_char[unused]++;
 			// remove most_repated pair from the hashmap because it will be replaced
-			pairs.remove(most_repeated);
-			for (int i = 0; i <= s.length() - 2; i++) {
-				pair = s.substring(i, i + 2);
-				if (pair.equals(most_repeated)) {
-					i++;
-					encoded += unused;
-				} else if (i == s.length() - 2) {
-					encoded += pair;
-				} else {
-					encoded += s.charAt(i);
-				}
-			}
+			encoded = s.replace(most_repeated, unused + "");
 			construct_hash_freq(encoded, pairs, used_char);
 			s = encoded;
 			encoded = "";
@@ -87,13 +83,20 @@ public class Compression {
 		} while (iterations > 0 && is_compressable(pairs));
 		return s;
 	}
+	//decode the produced string
+//	public static String decode_string(String encoded , HashMap<String , String> encode_scheme) {
+	//TODO
+//	}
 
 	public static void main(String[] args) {
-		String a = "ABABCABCD";
-		
-		String b = encode(a, 2);
-		System.out.println(b);
-		System.out.println(a);
-
+		String a = "<note><to>Tove</to><from>Jani</from><heading>Reminder</heading><body>Don't forget me this weekend!</body></note>";
+		String b;
+		System.out.println("Iterations\ta.len\tb.len");
+		final int ITERATIONS = 30;
+		double eff;
+		for (int i = 1; i < ITERATIONS; i++) {
+			b = encode_string(a, i);
+			System.out.println(i + "\t" + a.length() + "\t" + b.length());
+		}
 	}
 }
