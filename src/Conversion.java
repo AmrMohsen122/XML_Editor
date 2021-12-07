@@ -4,7 +4,7 @@ public class Conversion {
 
 	public Conversion() {
 		// TODO Auto-generated constructor stub
-<<<<<<< HEAD
+
                 
 	}
 	static void parsing_xml(String sa,ArrayList<String> string) {
@@ -36,12 +36,6 @@ public class Conversion {
 			}
 		}
 		
-			
-||||||| 79c19f6
-                //hi
-=======
-                
->>>>>>> ba4ac1fcaa1f41a13ec3cb80d3155900adecc805
-	}
+}
 
 }
