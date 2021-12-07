@@ -25,15 +25,21 @@ public class Compression {
 		return unused;
 	}
 
-	public static String encode(String s) {
-		String encoded = "";
-		HashMap<String, Integer> pairs = new HashMap<String, Integer>();
-		int[] used_char = new int[256]; // ferquency arrays that indicated what characters are used
-		// create the hashmap that contains all the repeated characters
+	private static boolean is_compressable(HashMap<String, Integer> h) {
+		for (Integer values : h.values()) {
+			if (values > 1) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static void construct_hash_freq(String input, HashMap<String, Integer> pairs, int[] freq) {
 		String pair;
-		for (int i = 0; i <= s.length() - 2; i++) {
-			used_char[s.charAt(i)]++;
-			pair = s.substring(i, i + 2);
+		pairs.clear();
+		for (int i = 0; i <= input.length() - 2; i++) {
+			freq[input.charAt(i)]++;
+			pair = input.substring(i, i + 2);
 			if (pairs.containsKey(pair)) {
 				// add one to the current value of key
 				pairs.replace(pair, pairs.get(pair) + 1);
@@ -44,36 +50,50 @@ public class Compression {
 		}
 
 		// add the last character to the frequency array
-		used_char[s.charAt(s.length() - 1)]++;
+		freq[input.charAt(input.length() - 1)]++;
+	}
 
-		// replacing most occruing pair with an unused character
-		String most_repeated = max_repeated_pair(pairs);
-		char unused = find_unused_char(used_char);
-		// mark the unused char as used for later cycles
-		used_char[unused]++;
-		// remove most_repated pair from the hashmap because it will be replaced
-		pairs.remove(most_repeated);
-		for (int i = 0; i <= s.length() - 2; i++) {
-			pair = s.substring(i, i + 2);
-			if(pair.equals(most_repeated)) {
-				i++;
-				encoded += unused;
+	public static String encode(String s, int iterations) {
+		String encoded = "";
+		HashMap<String, Integer> pairs = new HashMap<String, Integer>();
+		// ferquency arrays that indicated what characters are used
+		int[] used_char = new int[256]; 
+		// create the hashmap that contains all the repeated characters
+		construct_hash_freq(s, pairs, used_char);
+		do {
+			String pair;
+			// replacing most occruing pair with an unused character
+			String most_repeated = max_repeated_pair(pairs);
+			char unused = find_unused_char(used_char);
+			// mark the unused char as used for later cycles
+			used_char[unused]++;
+			// remove most_repated pair from the hashmap because it will be replaced
+			pairs.remove(most_repeated);
+			for (int i = 0; i <= s.length() - 2; i++) {
+				pair = s.substring(i, i + 2);
+				if (pair.equals(most_repeated)) {
+					i++;
+					encoded += unused;
+				} else if (i == s.length() - 2) {
+					encoded += pair;
+				} else {
+					encoded += s.charAt(i);
+				}
 			}
-			else if(i == s.length() - 2) {
-				encoded += pair;
-			}
-			else {
-				encoded += s.charAt(i);
-			}
-		}
-		return encoded;
+			construct_hash_freq(encoded, pairs, used_char);
+			s = encoded;
+			encoded = "";
+			iterations--;
+		} while (iterations > 0 && is_compressable(pairs));
+		return s;
 	}
 
 	public static void main(String[] args) {
 		String a = "ABABCABCD";
-		String b = encode(a);
-		System.out.println(a);
+		
+		String b = encode(a, 2);
 		System.out.println(b);
+		System.out.println(a);
 
 	}
 }
