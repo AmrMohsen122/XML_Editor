@@ -16,6 +16,7 @@ public class Tree {
 	}
 // node root ; root.setname(xml[0]);
 	//static Index i=new Index(0);
+	/*
 static void fillTree_XML(Node node ,ArrayList<String>xmlarr,Index i) {
 	//if (i.index==xmlarr.size())return;
 	
@@ -45,9 +46,36 @@ static void fillTree_XML(Node node ,ArrayList<String>xmlarr,Index i) {
 	
 	}
 	
+*/
+	
+	static void filltree2(Node node ,ArrayList<String>xmlarr,Index i) {
+		for (;i.index<xmlarr.size();i.index=i.index+1) {
+			
+			//System.out.println("index:"+i.index);
+			if (xmlarr.get(i.index).length()>=2&&xmlarr.get(i.index).charAt(1)=='/') {   
+				return;
+			}
+			else if(xmlarr.get(i.index).charAt(0)!='<'){
+				node.setTagData(xmlarr.get(i.index));
+				i.index=i.index+1;
+				return;
+			}
+			else {
+			Node child=new Node();	
+			child.setDepth(node.getDepth()+1);
+			child.setTagName(xmlarr.get(i.index));
+			Node.addDuplicateChild(node,child);
+			i.index=i.index+1;
+			filltree2(child,xmlarr,i);
+				
+			}
 	
 }
 	
+	
+	
+}
+
 	
 	
 	
