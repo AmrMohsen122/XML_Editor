@@ -1,28 +1,31 @@
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 //TODO CREATE A FILE AND ADD THE BINARY CODE TO IT
 
 public class Compression {
 	private final static int NUMBER_CHAR = 256;
-	private static TreeNode root;
-	private static String filePath;
+	private TreeNode root;
+	private String InputfilePath;
+	private String outputFilePath;
 
 	public Compression(String filePath) {
-		this.filePath = filePath;
+		this.outputFilePath = filePath;
 		root = null;
 	}
+	
 
 	/*************************************************************
-	 * 					HELPER METHODS
+	 * HELPER METHODS
 	 ***********************************************************/
 
 	// fill the hashtable which contains each character and its replacement
-	private static void fillReplacementTable(TreeNode root, String[] replacementTable, String code) {
+	private void fillReplacementTable(TreeNode root, String[] replacementTable, String code) {
 		if (root instanceof Leaf) {
 			replacementTable[((Leaf) root).getCharacter()] = code;
 			return;
@@ -33,11 +36,11 @@ public class Compression {
 	}
 
 	/**********************************************************
-	 * 				ENCODING AND DECODING
+	 * ENCODING AND DECODING
 	 ********************************************************/
 
 	// where the magic happens
-	public static String encode(String s) {
+	public String encode(String s) {
 		int[] freqArray = new int[NUMBER_CHAR];
 		String[] replacementTable = new String[NUMBER_CHAR];
 		ArrayList<TreeNode> nodes = new ArrayList<TreeNode>();
@@ -76,30 +79,61 @@ public class Compression {
 		return encoded;
 	}
 
-	public static void writeEncoded(String encoded) throws IOException {
-		FileOutputStream fileOS = new FileOutputStream(filePath);
-		ObjectOutputStream os = new ObjectOutputStream(fileOS);
+	public void writeEncoded(String encoded) throws IOException {
+		FileOutputStream fileOS = new FileOutputStream(outputFilePath);
+		DataOutputStream os = new DataOutputStream(fileOS);
 		String toInt = "";
+		byte flag = 0;
+		byte remainder = (byte)(8 - (encoded.length() % 8));
+		if(remainder != 0) {
+//			flag = (byte) (flag | 0x01);
+			flag = remainder;
+		}
+		os.writeByte(flag);
 		for (int i = 0; i < encoded.length(); i++) {
 			toInt += encoded.charAt(i);
-			//everytime you concat. 8 bits write them as a byte to the file
+			// everytime you concat. 8 bits write them as a byte to the file
 			if ((i + 1) % 8 == 0) {
-				os.writeByte(Integer.parseInt(toInt , 2));
+				os.writeByte(Integer.parseInt(toInt, 2));
 				toInt = "";
 			}
-			
+
 		}
-		//if the string length is not divisible by 8 the previous loop will terminate with some bits not added
-		//so add the rest of the bits in that case
-		if(encoded.length() % 8 != 0) {
-			os.writeByte(Integer.parseInt(toInt , 2));
+		// if the string length is not divisible by 8 the previous loop will terminate
+		// with some bits not added
+		// so pad and add the rest of the bits in that case
+		for (;remainder != 0;remainder--) {
+			toInt += '0';
+			if(remainder == 1) {
+				os.writeByte(Integer.parseInt(toInt, 2));
+			}
 		}
 		os.close();
-
+	}
+	
+	public String readAndDecode() throws IOException {
+		//TODO read each byte and convert it to the minimum binary representation
+		//create a buffered reader to read the encoded line
+		StringBuffer encoded = new StringBuffer();
+		FileInputStream fileIS = new FileInputStream(outputFilePath);
+		DataInputStream dataIS = new DataInputStream(fileIS);
+		char[] read = new char[dataIS.available()];
+		int count = 0;
+		while(dataIS.available() > 0) {
+			read[count++] = (char)dataIS.readByte();
+		}
+		//the header byte which contains remainder
+		char flag = read[0];
+		//create the econded StringBuffer
+		for(int i = 1 ; i < count ; i++) {
+			encoded.append(String.format("%8s", Integer.toBinaryString(read[i] & 0xFF)).replace(' ','0'));		
+		}
+		encoded.delete(encoded.length() - (int)flag, encoded.length());
+		return decode(encoded.toString());
 	}
 	
 	// where the magic is removed
-	public static String decode(String encoded) {
+	public String decode(String encoded) {
 		String decoded = "";
 		TreeNode start = root;
 		for (int i = 0; i < encoded.length(); i++) {
@@ -117,36 +151,26 @@ public class Compression {
 		}
 		return decoded;
 	}
-	
 
 	
-	
-
 	// used for testing
 	public static void main(String[] args) throws IOException {
 		String filePath = "D:\\Compression\\output.txt";
-//		String a = "<breakfast_menu><food><name>Belgian Waffles</name><price>$5.95</price><description>Two of our famous Belgian Waffles with plenty of real maple syrup</description><calories>650</calories></food><food><name>Strawberry Belgian Waffles</name><price>$7.95</price><description>Light Belgian waffles covered with strawberries and whipped cream</description><calories>900</calories></food><food><name>Berry-Berry Belgian Waffles</name><price>$8.95</price><description>Belgian waffles covered with assorted fresh berries and whipped cream</description><calories>900</calories></food><food><name>French Toast</name><price>$4.50</price><description>Thick slices made from our homemade sourdough bread</description><calories>600</calories></food><food><name>Homestyle Breakfast</name><price>$6.95</price><description>Two eggs, bacon or sausage, toast, and our ever-popular hash browns</description><calories>950</calories></food></breakfast_menu>";
+		String a = "<breakfast_menu><food><name>Belgian Waffles</name><price>$5.95</price><description>Two of our famous Belgian Waffles with plenty of real maple syrup</description><calories>650</calories></food><food><name>Strawberry Belgian Waffles</name><price>$7.95</price><description>Light Belgian waffles covered with strawberries and whipped cream</description><calories>900</calories></food><food><name>Berry-Berry Belgian Waffles</name><price>$8.95</price><description>Belgian waffles covered with assorted fresh berries and whipped cream</description><calories>900</calories></food><food><name>French Toast</name><price>$4.50</price><description>Thick slices made from our homemade sourdough bread</description><calories>600</calories></food><food><name>Homestyle Breakfast</name><price>$6.95</price><description>Two eggs, bacon or sausage, toast, and our ever-popular hash browns</description><calories>950</calories></food></breakfast_menu>";
 //		String a = "AAAABBBBBCD";
-		String a = "<note><to>Tove</to><from>Jani</from><heading>Reminder</heading><body>Don't forget me this weekend!</body></note>";
+//		String a = "<note><to>Tove</to><from>Jani</from><heading>Reminder</heading><body>Don't forget me this weekend!</body></note>";
 		Compression c = new Compression(filePath);
-		String b = encode(a);
+		String b = c.encode(a);
 		c.writeEncoded(b);
-		System.out.println(a.length());
-		System.out.println(b.length() / 8);
-
-		// this puts a 6 byte overhead
-		FileInputStream fileIS = new FileInputStream(filePath);
-		ObjectInputStream is = new ObjectInputStream(fileIS);
-		for (int i = 0; i < 3; i++) {
-			System.out.println((int)is.readByte());
-		}
-		is.close();
+		String decoded = c.readAndDecode();
+		System.out.println(decoded);
+		
 	}
 
 }
 
 /**********************************************************
- * 					TREE IMPLEMENTATION
+ * TREE IMPLEMENTATION
  **********************************************************/
 class TreeNode implements Comparable<TreeNode> {
 	protected int frequency;
