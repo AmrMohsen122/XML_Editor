@@ -47,6 +47,105 @@ static void fillTree_XML(Node node ,ArrayList<String>xmlarr,Index i) {
 	}
 	
 */
+	public static boolean isNumeric(String str) {
+		  return str.matches("-?\\d+(\\.\\d+)?");  //match a number with optional '-' and decimal.
+		}
+static void printLeaf(Node leaf) { // print value and name
+	if (isNumeric(leaf.getTagData())) {
+		System.out.print("\""+ leaf.getTagName().substring(1, leaf.getTagName().length()-1) +"\": "
+				+ (leaf.getTagData())+",\n");
+	}
+	
+	else {
+System.out.print("\""+ leaf.getTagName().substring(1, leaf.getTagName().length()-1) +"\": "
+		+ "\""+(leaf.getTagData())+"\""+","
+		
+		);
+	}
+	
+}
+static void printLeafV(Node leaf) { // print value only
+	if (isNumeric(leaf.getTagData())) {
+		System.out.print((leaf.getTagData())+",\n");
+	}
+	
+	else {
+System.out.print(  "\""+(leaf.getTagData())+"\""+","
+		
+		);
+	}
+	
+}
+	
+void toJson(Node parent) {
+	
+	if (parent.getTagData()==null) { // take care == or .equals?
+		//System.out.println(parent.getTagData());
+		//System.out.println(parent.getTagName());
+			if (parent.getDepth()==0) {
+				System.out.println("{");
+				System.out.println("\""+parent.getTagName().substring(1,parent.getTagName().length()-1)+"\": {");
+				}
+				for (int i=0;i<parent.getChildren().size();i++) {
+					if(parent.getChildren().get(i).size()==1) {
+						if(parent.getChildren().get(i).get(0).getTagData()==null) {
+							System.out.println("");
+							System.out.println("\""+
+						parent.getChildren().get(i).get(0).getTagName().substring(1,parent.getChildren().get(i).get(0).getTagName().length()-1) +"\": {");
+					}
+							toJson(parent.getChildren().get(i).get(0));
+							
+						}
+					else {
+					for(int j=0;j<parent.getChildren().get(i).size();j++) {
+						if (j==0) {
+						System.out.println("\""+
+						parent.getChildren().get(i).get(0).getTagName().substring(1,parent.getChildren().get(i).get(0).getTagName().length()-1)
+						+"\": [");
+						}
+						//System.out.println("{");
+						if (parent.getChildren().get(i).get(j).getTagData()!=null) {
+							System.out.println("");
+							printLeafV(parent.getChildren().get(i).get(j));
+							
+							if(j==parent.getChildren().get(i).size()-1) {
+								System.out.println("");
+								System.out.print("]");
+								}
+						}else {
+							System.out.println("{");
+						toJson(parent.getChildren().get(i).get(j));
+						System.out.println("},");
+						if(j==parent.getChildren().get(i).size()-1)System.out.println("]");
+						 }
+						
+						}
+					
+					}
+				}
+				System.out.println(parent.getTagName());
+				System.out.println("}");
+	}
+	
+	else {
+		
+		printLeaf(parent);
+		return;
+		
+	}
+	
+	
+	if (parent.getDepth()==0) {
+		System.out.println("}");
+		
+		}
+	
+	
+	
+}
+	
+	
+	
 	
 	static void filltree2(Node node ,ArrayList<String>xmlarr,Index i) {
 		for (;i.index<xmlarr.size();i.index=i.index+1) {
