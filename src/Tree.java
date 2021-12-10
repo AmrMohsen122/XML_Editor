@@ -1,7 +1,7 @@
 package Testproject;
 
 import java.util.ArrayList;
-
+import java.lang.StringBuffer;
 public class Tree {
 	private Node root;
 	Tree(){
@@ -50,93 +50,94 @@ static void fillTree_XML(Node node ,ArrayList<String>xmlarr,Index i) {
 	public static boolean isNumeric(String str) {
 		  return str.matches("-?\\d+(\\.\\d+)?");  //match a number with optional '-' and decimal.
 		}
-static void printLeaf(Node leaf) { // print value and name
+static void printLeaf(Node leaf , StringBuffer s) { // print value and name
 	if (isNumeric(leaf.getTagData())) {
-		System.out.print("\""+ leaf.getTagName().substring(1, leaf.getTagName().length()-1) +"\": "
-				+ (leaf.getTagData())+",\n");
+		s.append(Node.spaces(leaf.getDepth())+"\""+ leaf.getTagName().substring(1, leaf.getTagName().length()-1) +"\": "
+				+ (leaf.getTagData())+",\n \n");
 	}
 	
 	else {
-System.out.print("\""+ leaf.getTagName().substring(1, leaf.getTagName().length()-1) +"\": "
-		+ "\""+(leaf.getTagData())+"\""+","
+s.append(Node.spaces(leaf.getDepth())+"\""+ leaf.getTagName().substring(1, leaf.getTagName().length()-1) +"\": "
+		+ "\""+(leaf.getTagData())+"\""+", \n"
 		
 		);
 	}
 	
 }
-static void printLeafV(Node leaf) { // print value only
+static void printLeafV(Node leaf, StringBuffer s) { // print value only
 	if (isNumeric(leaf.getTagData())) {
-		System.out.print((leaf.getTagData())+",\n");
+		s.append(Node.spaces(leaf.getDepth())+(leaf.getTagData())+",\n \n ");
 	}
 	
 	else {
-System.out.print(  "\""+(leaf.getTagData())+"\""+","
-		
-		);
+s.append( Node.spaces(leaf.getDepth()) + "\""+(leaf.getTagData())+"\""+", \n");
 	}
 	
 }
 	
-void toJson(Node parent) {
+static void toJson(Node parent , StringBuffer s) {
+	
 	
 	if (parent.getTagData()==null) { // take care == or .equals?
 		//System.out.println(parent.getTagData());
 		//System.out.println(parent.getTagName());
 			if (parent.getDepth()==0) {
-				System.out.println("{");
-				System.out.println("\""+parent.getTagName().substring(1,parent.getTagName().length()-1)+"\": {");
+				s.append(Node.spaces(parent.getDepth())+"{ \n");
+				s.append(Node.spaces(parent.getDepth())+"\""+parent.getTagName().substring(1,parent.getTagName().length()-1)+"\": { \n");
 				}
 				for (int i=0;i<parent.getChildren().size();i++) {
 					if(parent.getChildren().get(i).size()==1) {
 						if(parent.getChildren().get(i).get(0).getTagData()==null) {
-							System.out.println("");
-							System.out.println("\""+
-						parent.getChildren().get(i).get(0).getTagName().substring(1,parent.getChildren().get(i).get(0).getTagName().length()-1) +"\": {");
+							s.append("\n");
+							s.append(Node.spaces(parent.getChildren().get(i).get(0).getDepth()) + "\""+
+						parent.getChildren().get(i).get(0).getTagName().substring(1,parent.getChildren().get(i).get(0).getTagName().length()-1) +"\": { \n");
 					}
-							toJson(parent.getChildren().get(i).get(0));
+							toJson(parent.getChildren().get(i).get(0) , s);
 							
 						}
 					else {
 					for(int j=0;j<parent.getChildren().get(i).size();j++) {
 						if (j==0) {
-						System.out.println("\""+
+						s.append(Node.spaces(parent.getChildren().get(i).get(0).getDepth())+"\""+
 						parent.getChildren().get(i).get(0).getTagName().substring(1,parent.getChildren().get(i).get(0).getTagName().length()-1)
-						+"\": [");
+						+"\": [ \n");
 						}
 						//System.out.println("{");
 						if (parent.getChildren().get(i).get(j).getTagData()!=null) {
-							System.out.println("");
-							printLeafV(parent.getChildren().get(i).get(j));
+							s.append("\n");
+							printLeafV(parent.getChildren().get(i).get(j),s);
 							
 							if(j==parent.getChildren().get(i).size()-1) {
-								System.out.println("");
-								System.out.print("]");
+								s.append("\n");
+								s.append(Node.spaces(parent.getDepth())+ "] \n");
 								}
 						}else {
-							System.out.println("{");
-						toJson(parent.getChildren().get(i).get(j));
-						System.out.println("},");
-						if(j==parent.getChildren().get(i).size()-1)System.out.println("]");
+							s.append(Node.spaces(parent.getDepth())+"{ \n");
+						toJson(parent.getChildren().get(i).get(j), s);
+						
+						s.append(Node.spaces(parent.getDepth())+ "}, \n");
+						if(j==parent.getChildren().get(i).size()-1)
+							s.append(Node.spaces(parent.getDepth())+"] \n");
 						 }
 						
 						}
 					
 					}
 				}
-				System.out.println(parent.getTagName());
-				System.out.println("}");
+				
+				s.append(Node.spaces(parent.getDepth())+"\n"+"} \n");
 	}
 	
 	else {
 		
-		printLeaf(parent);
+		printLeaf(parent ,s);
 		return;
 		
 	}
 	
 	
 	if (parent.getDepth()==0) {
-		System.out.println("}");
+		s.append(Node.spaces(parent.getDepth())+"} \n");
 		
 		}
 	
@@ -175,7 +176,83 @@ void toJson(Node parent) {
 	
 }
 
+	static StringBuffer removeJsonEmptyLines (StringBuffer s) 
+	{
+		
+		String string;
+		string=s.toString();
+		string=string.replaceAll("(?m)^[ ]*\r?\n", "");
+		StringBuffer adjusted = new StringBuffer (string);
+		return adjusted;
+	}
 	
+	static StringBuffer formattingJson(StringBuffer s) 
+	{
+		
+		int spacesCounter=0;
+		for (int i=0 ; i<s.length() ; i++) 
+		{
+			if (s.charAt(i)=='{' )
+			{
+				while(s.charAt(i)!='\n') 
+				{
+					i++;
+				}
+				//i='\n'
+				i++; //lama ba3ml insert by7ot f makan el index w el makan el adeem ygeebo ba3do
+				s.insert(i, Node.spaces(spacesCounter+2));
+				spacesCounter+=2;
+			}
+			else if(s.charAt(i)=='\"') 
+			{
+				boolean found=false;
+				while (s.charAt(i)!='\n') 
+				{
+					if(s.charAt(i)=='{' || s.charAt(i)=='[') 
+					{
+						found=true; 
+						
+					}
+				i++;	
+				}
+				//i=' \n '
+				i++;
+				if (found) 
+				{
+					
+					s.insert(i, Node.spaces(spacesCounter+2));
+					spacesCounter+=2;	
+				}
+				else {
+					s.insert(i, Node.spaces(spacesCounter));
+				}
+			}
+			else if (s.charAt(i)==']' || s.charAt(i)=='}' ) 
+			{
+				boolean found=false;
+				while (s.charAt(i)!='\n') 
+				{
+					if(s.charAt(i)==',' ) {
+						found=true;
+					} 
+					i++;
+				}//i='\n'
+				i++;
+				if(!found) {
+					
+					s.insert(i, Node.spaces(spacesCounter-2));
+					spacesCounter-=2;	
+				}
+				else 
+				{
+					s.insert(i, Node.spaces(spacesCounter));
+				}
+			}
+			
+		}
+		
+		return s;
+	}
 	
 	
 	
