@@ -8,26 +8,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 //TODO CREATE A FILE AND ADD THE BINARY CODE TO IT
 
-public class Compression {
+public abstract class Compression {
 	private final static int NUMBER_CHAR = 256;
-	private TreeNode root;
-	//remove this 
-	public static int next = -1;
-	//remove this
-	private String outputFilePath;
-	private String[] replacementTable = new String[NUMBER_CHAR];
+	private static int next = -1;
+	private static TreeNode huffmanRoot;
 
-	public Compression(String filePath) {
-		this.outputFilePath = filePath;
-		root = null;
-	}
-
-	/*************************************************************
-	 * HELPER METHODS
-	 ***********************************************************/
+	/*********************** HELPER METHODS ******************/
 
 	// fill the hashtable which contains each character and its replacement
-	private void fillReplacementTable(TreeNode root, String[] replacementTable, String code) {
+	private static void fillReplacementTable(TreeNode root, String[] replacementTable, String code) {
 		if (root instanceof Leaf) {
 			replacementTable[((Leaf) root).getCharacter()] = code;
 			return;
@@ -37,8 +26,9 @@ public class Compression {
 		fillReplacementTable(root.rightChild, replacementTable, code + "1");
 	}
 
-	// static for purpose of testing
-	private void encodeHuffmanTree(TreeNode root, StringBuilder s) {
+	/******************** TREE STROING AND READING ******************/
+
+	private static void encodeHuffmanTree(TreeNode root, StringBuilder s) {
 		if (root instanceof Leaf) {
 			s.append('0');
 			s.append(((Leaf) root).getCharacter());
@@ -50,49 +40,100 @@ public class Compression {
 		}
 	}
 
-	private String binarfyHuffmanTree() {
+	private static String binarfyHuffmanTree(TreeNode huffmanRoot) {
 		StringBuilder sb = new StringBuilder();
 		StringBuilder temp = new StringBuilder();
-		encodeHuffmanTree(root, sb);
-		for (int i = 0; i < sb.length(); i++) {
-			if (sb.charAt(i) == '0' || sb.charAt(i) == '1') {
-				temp.append(sb.charAt(i));
+		encodeHuffmanTree(huffmanRoot, sb);
+		char current;
+		for (int i = 0; i < sb.length() - 1; i++) {
+			current = sb.charAt(i);
+			if (current == '1') {
+				temp.append(current);
+
 			} else {
-				temp.append(String.format("%8s", Integer.toBinaryString(sb.charAt(i))).replace(' ', '0'));
+				temp.append(current);
+				temp.append(String.format("%8s", Integer.toBinaryString(sb.charAt(++i))).replace(' ', '0'));
 			}
 		}
 		return temp.toString();
 	}
 
-	//next should start from -1;
+	private static void writeEncodedHuffman(String encodedHuffman, String encodedHuffmanOutputPath) throws IOException {
+		FileOutputStream fileOS = new FileOutputStream(encodedHuffmanOutputPath);
+		DataOutputStream dataOS = new DataOutputStream(fileOS);
+		byte flag = 0;
+		String toInt = "";
+		byte remainder = (byte) (8 - encodedHuffman.length() % 8);
+		if (remainder != 0) {
+			flag = remainder;
+		}
+		dataOS.writeByte(flag);
+		for (int i = 0; i < encodedHuffman.length(); i++) {
+			toInt += encodedHuffman.charAt(i);
+			// everytime you concat. 8 bits write them as a byte to the file
+			if ((i + 1) % 8 == 0) {
+				dataOS.writeByte(Integer.parseInt(toInt, 2));
+				toInt = "";
+			}
+		}
+		for (; remainder != 0; remainder--) {
+			toInt += '0';
+			if (remainder == 1) {
+				dataOS.writeByte(Integer.parseInt(toInt, 2));
+			}
+		}
+		dataOS.close();
+	}
+
 	private static TreeNode decodeHuffmanTree(String encoded) {
-		next += 1;
+		// next should start from -1;
 		TreeNode decodedRoot;
+		next += 1;
 		// a leaf
+		if (next < encoded.length()) {
+
+		}
 		if (encoded.charAt(next) == '0') {
 			decodedRoot = new Leaf(' ', 3);
 			String toChar = "";
-			for(int i = next + 1 ; i < next + 9 ;i++) {
+			for (int i = next + 1; i < next + 9; i++) {
 				toChar += encoded.charAt(i);
 			}
-			((Leaf)decodedRoot).setCharacter((char)Integer.parseInt(toChar , 2));
-			toChar = "";
+			((Leaf) decodedRoot).setCharacter((char) Integer.parseInt(toChar, 2));
 			next = next + 8;
 		} else {
 			decodedRoot = new TreeNode(10);
 			decodedRoot.leftChild = decodeHuffmanTree(encoded);
 			decodedRoot.rightChild = decodeHuffmanTree(encoded);
 		}
+
 		return decodedRoot;
 	}
 
-	/**********************************************************
-	 * ENCODING AND DECODING
-	 ********************************************************/
+	private static TreeNode readEncodedHuffman(String encodedHuffmanOutputPath) throws IOException {
+		FileInputStream fileIS = new FileInputStream(encodedHuffmanOutputPath);
+		DataInputStream dataIS = new DataInputStream(fileIS);
+		StringBuffer encoded = new StringBuffer();
+		char[] read = new char[dataIS.available()];
+		int count = 0;
+		while (dataIS.available() > 0) {
+			read[count++] = (char) dataIS.readByte();
+		}
+		dataIS.close();
+		char flag = read[0];
+		for (int i = 1; i < count; i++) {
+			encoded.append(String.format("%8s", Integer.toBinaryString(read[i] & 0xFF)).replace(' ', '0'));
+		}
+		encoded.delete(encoded.length() - flag, encoded.length());
+		return decodeHuffmanTree(encoded.toString());
+	}
+
+	/******************** ENCODING AND DECODING *******************/
 
 	// where the magic happens
-	public String encode(String s) {
+	private static String encode(String s) {
 		int[] freqArray = new int[NUMBER_CHAR];
+		String[] replacementTable = new String[NUMBER_CHAR];
 		ArrayList<TreeNode> nodes = new ArrayList<TreeNode>();
 		String encoded = "";
 		for (int i = 0; i < s.length(); i++) {
@@ -120,8 +161,8 @@ public class Compression {
 			}
 			nodes.add(i, combined);
 		}
-		root = nodes.get(0);
-		fillReplacementTable(root, replacementTable, "");
+		huffmanRoot = nodes.get(0);
+		fillReplacementTable(huffmanRoot, replacementTable, "");
 
 		for (int i = 0; i < s.length(); i++) {
 			encoded += replacementTable[s.charAt(i)];
@@ -129,7 +170,7 @@ public class Compression {
 		return encoded;
 	}
 
-	public void writeEncoded(String encoded) throws IOException {
+	private static void writeEncoded(String encoded, String outputFilePath) throws IOException {
 		FileOutputStream fileOS = new FileOutputStream(outputFilePath);
 		DataOutputStream os = new DataOutputStream(fileOS);
 		String toInt = "";
@@ -160,7 +201,7 @@ public class Compression {
 		os.close();
 	}
 
-	public String readAndDecode() throws IOException {
+	private static String readAndDecode(String outputFilePath, TreeNode huffmanRoot) throws IOException {
 		// create a buffered reader to read the encoded line
 		StringBuffer encoded = new StringBuffer();
 		FileInputStream fileIS = new FileInputStream(outputFilePath);
@@ -178,13 +219,13 @@ public class Compression {
 			encoded.append(String.format("%8s", Integer.toBinaryString(read[i] & 0xFF)).replace(' ', '0'));
 		}
 		encoded.delete(encoded.length() - flag, encoded.length());
-		return decode(encoded.toString());
+		return decode(encoded.toString(), huffmanRoot);
 	}
 
 	// where the magic is removed
-	public String decode(String encoded) {
+	private static String decode(String encoded, TreeNode huffmanRoot) {
 		String decoded = "";
-		TreeNode start = root;
+		TreeNode start = huffmanRoot;
 		for (int i = 0; i < encoded.length(); i++) {
 			// rules for traversing the tree
 			if (encoded.charAt(i) == '0') {
@@ -195,53 +236,38 @@ public class Compression {
 			// if you hit a leaf node just add its value and restart the tree
 			if (start instanceof Leaf) {
 				decoded += ((Leaf) start).getCharacter();
-				start = root;
+				start = huffmanRoot;
 			}
 		}
 		return decoded;
 	}
-	//this is used for testing
-	public static String decode(String encoded , TreeNode root) {
-		String decoded = "";
-		TreeNode start = root;
-		for (int i = 0; i < encoded.length(); i++) {
-			// rules for traversing the tree
-			if (encoded.charAt(i) == '0') {
-				start = start.leftChild;
-			} else if (encoded.charAt(i) == '1') {
-				start = start.rightChild;
-			}
-			// if you hit a leaf node just add its value and restart the tree
-			if (start instanceof Leaf) {
-				decoded += ((Leaf) start).getCharacter();
-				start = root;
-			}
-		}
-		return decoded;
+
+	/********************************* FINAL METHODS *************************/
+	public static void compress(String xmlContent, String compressedOutputPath, String encodedHuffmanOutputPath)
+			throws IOException {
+		huffmanRoot = null;
+		String encodedXML = encode(xmlContent);
+		writeEncoded(encodedXML, compressedOutputPath);
+		String encodedHuffman = binarfyHuffmanTree(huffmanRoot);
+		writeEncodedHuffman(encodedHuffman, encodedHuffmanOutputPath);
+	}
+
+	public static String decompress(String compressedOutputPath, String encodedHuffmanOutputPath) throws IOException {
+		next = -1;
+		TreeNode reconstructedHuffmanTree = readEncodedHuffman(encodedHuffmanOutputPath);
+		return readAndDecode(compressedOutputPath, reconstructedHuffmanTree);
 	}
 
 	// used for testing
 	public static void main(String[] args) throws IOException {
-		String filePath = "D:\\Compression\\output.txt";
-//		String a = "<breakfast_menu><food><name>Belgian Waffles</name><price>$5.95</price><description>Two of our famous Belgian Waffles with plenty of real maple syrup</description><calories>650</calories></food><food><name>Strawberry Belgian Waffles</name><price>$7.95</price><description>Light Belgian waffles covered with strawberries and whipped cream</description><calories>900</calories></food><food><name>Berry-Berry Belgian Waffles</name><price>$8.95</price><description>Belgian waffles covered with assorted fresh berries and whipped cream</description><calories>900</calories></food><food><name>French Toast</name><price>$4.50</price><description>Thick slices made from our homemade sourdough bread</description><calories>600</calories></food><food><name>Homestyle Breakfast</name><price>$6.95</price><description>Two eggs, bacon or sausage, toast, and our ever-popular hash browns</description><calories>950</calories></food></breakfast_menu>";
-//		String a = "AAAABBBBBCD";
-//		String a = "<note><to>Tove</to><from>Jani</from><heading>Reminder</heading><body>Don't forget me this weekend!</body></note>";
-		Compression c = new Compression(filePath);
-//		String b = c.encode(a);
-//		String d = "10B110C0D0A";
-//		TreeNode decode = decodeHuffmanTree("100100001011001000011001000100001000001");
-//		System.out.println(decode(b,decode));
-//		c.printReplacementTable();
-
+		String compressedFilePath = "D:\\Compression\\outputCompressed.txt";
+		String huffmanFilePath = "D:\\Compression\\outputHuffman.txt";
+		
 	}
 
 }
 
-
-
-/**********************************************************
- * TREE IMPLEMENTATION
- **********************************************************/
+/************************** TREE IMPLEMENTATION ************************/
 class TreeNode implements Comparable<TreeNode> {
 	protected int frequency;
 	protected TreeNode leftChild;
@@ -310,6 +336,7 @@ class Leaf extends TreeNode {
 	public char getCharacter() {
 		return character;
 	}
+
 	public void setCharacter(char c) {
 		character = c;
 	}
