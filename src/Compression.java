@@ -14,8 +14,8 @@ public abstract class Compression {
 
 	/*********************** HELPER METHODS ******************/
 
-	// fill the hashtable which contains each character and its replacement
 	private static void fillReplacementTable(TreeNode root, String[] replacementTable, String code) {
+		// fill the hashtable which contains each character and its replacement
 		if (root instanceof Leaf) {
 			replacementTable[((Leaf) root).getCharacter()] = code;
 			return;
@@ -25,6 +25,60 @@ public abstract class Compression {
 		fillReplacementTable(root.rightChild, replacementTable, code + "1");
 	}
 
+	
+	/************************ File Handling ******************/
+	
+	private static void writeBinaryToFile(String binary, String filePath) throws IOException {
+		FileOutputStream fileOS = new FileOutputStream(filePath);
+		DataOutputStream dataOS = new DataOutputStream(fileOS);
+		byte flag = 0;
+		String toInt = "";
+		byte remainder = (byte) (binary.length() % 8);
+		if (remainder != 0) {
+			flag = (byte) (8 - remainder);
+		}
+		dataOS.writeByte(flag);
+		for (int i = 0; i < binary.length(); i++) {
+			toInt += binary.charAt(i);
+			// everytime you concat. 8 bits write them as a byte to the file
+			if ((i + 1) % 8 == 0) {
+				dataOS.writeByte(Integer.parseInt(toInt, 2));
+				toInt = "";
+			}
+		}
+		// if the string length is not divisible by 8 the previous loop will terminate
+		// with some bits not added
+		// so pad and add the rest of the bits in that case
+		for (; flag != 0; flag--) {
+			toInt += '0';
+			if (flag == 1) {
+				dataOS.writeByte(Integer.parseInt(toInt, 2));
+			}
+		}
+		dataOS.close();
+	}
+
+	private static StringBuilder readBinaryFromFile(String filePath) throws IOException {
+		FileInputStream fileIS = new FileInputStream(filePath);
+		DataInputStream dataIS = new DataInputStream(fileIS);
+		StringBuilder encoded = new StringBuilder();
+		char[] read = new char[dataIS.available()];
+		int count = 0;
+		while (dataIS.available() > 0) {
+			read[count++] = (char) dataIS.readByte();
+		}
+		dataIS.close();
+		char flag = read[0];
+		for (int i = 1; i < count; i++) {
+			encoded.append(String.format("%8s", Integer.toBinaryString(read[i] & 0xFF)).replace(' ', '0'));
+		}
+		if (flag != 0) {
+			encoded.delete(encoded.length() - flag, encoded.length());
+		}
+		return encoded;
+	}
+
+	
 	/******************** TREE STROING AND READING ******************/
 
 	private static void encodeHuffmanTree(TreeNode root, StringBuilder s) {
@@ -57,36 +111,6 @@ public abstract class Compression {
 		return temp.toString();
 	}
 	
-	private static void writeBinaryToFile(String binary , String filePath) throws IOException{
-		FileOutputStream fileOS = new FileOutputStream(filePath);
-		DataOutputStream dataOS = new DataOutputStream(fileOS);
-		byte flag = 0;
-		String toInt = "";
-		byte remainder = (byte) (binary.length() % 8);
-		if (remainder != 0) {
-			flag = (byte)(8 - remainder);
-		}
-		dataOS.writeByte(flag);
-		for (int i = 0; i < binary.length(); i++) {
-			toInt += binary.charAt(i);
-			// everytime you concat. 8 bits write them as a byte to the file
-			if ((i + 1) % 8 == 0) {
-				dataOS.writeByte(Integer.parseInt(toInt, 2));
-				toInt = "";
-			}
-		}
-		// if the string length is not divisible by 8 the previous loop will terminate
-		// with some bits not added
-		// so pad and add the rest of the bits in that case
-		for (; flag != 0; flag--) {
-			toInt += '0';
-			if (flag == 1) {
-				dataOS.writeByte(Integer.parseInt(toInt, 2));
-			}
-		}
-		dataOS.close();
-	}
-
 	private static TreeNode decodeHuffmanTree(String encoded) {
 		// next should start from -1;
 		TreeNode decodedRoot;
@@ -112,34 +136,13 @@ public abstract class Compression {
 		return decodedRoot;
 	}
 
-	private static TreeNode readEncodedHuffman(String encodedHuffmanOutputPath) throws IOException {
-		FileInputStream fileIS = new FileInputStream(encodedHuffmanOutputPath);
-		DataInputStream dataIS = new DataInputStream(fileIS);
-		StringBuffer encoded = new StringBuffer();
-		char[] read = new char[dataIS.available()];
-		int count = 0;
-		while (dataIS.available() > 0) {
-			read[count++] = (char) dataIS.readByte();
-		}
-		dataIS.close();
-		char flag = read[0];
-		for (int i = 1; i < count; i++) {
-			encoded.append(String.format("%8s", Integer.toBinaryString(read[i] & 0xFF)).replace(' ', '0'));
-		}
-		if(flag != 0) {
-			encoded.delete(encoded.length() - flag, encoded.length());
-		}
-		return decodeHuffmanTree(encoded.toString());
-	}
-
 	/******************** ENCODING AND DECODING *******************/
 
-	// where the magic happens
 	private static String encode(String s) {
 		int[] freqArray = new int[NUMBER_CHAR];
 		String[] replacementTable = new String[NUMBER_CHAR];
 		ArrayList<TreeNode> nodes = new ArrayList<TreeNode>();
-		String encoded = "";
+		StringBuilder encoded = new StringBuilder();
 		for (int i = 0; i < s.length(); i++) {
 			freqArray[s.charAt(i)]++;
 		}
@@ -169,37 +172,13 @@ public abstract class Compression {
 		fillReplacementTable(huffmanRoot, replacementTable, "");
 
 		for (int i = 0; i < s.length(); i++) {
-			encoded += replacementTable[s.charAt(i)];
+			encoded.append(replacementTable[s.charAt(i)]);
 		}
-		return encoded;
+		return encoded.toString();
 	}
 
-	private static String readAndDecode(String outputFilePath, TreeNode huffmanRoot) throws IOException {
-		// create a buffered reader to read the encoded line
-		StringBuffer encoded = new StringBuffer();
-		FileInputStream fileIS = new FileInputStream(outputFilePath);
-		DataInputStream dataIS = new DataInputStream(fileIS);
-		char[] read = new char[dataIS.available()];
-		int count = 0;
-		while (dataIS.available() > 0) {
-			read[count++] = (char) dataIS.readByte();
-		}
-		dataIS.close();
-		// the header byte which contains remainder
-		char flag = read[0];
-		// create the econded StringBuffer
-		for (int i = 1; i < count; i++) {
-			encoded.append(String.format("%8s", Integer.toBinaryString(read[i] & 0xFF)).replace(' ', '0'));
-		}
-		if(flag != 0) {
-			encoded.delete(encoded.length() - flag, encoded.length());
-		}
-		return decode(encoded.toString(), huffmanRoot);
-	}
-
-	// where the magic is removed
-	private static String decode(String encoded, TreeNode huffmanRoot) {
-		String decoded = "";
+	private static StringBuilder decode(StringBuilder encoded, TreeNode huffmanRoot) {
+		StringBuilder decoded = new StringBuilder();
 		TreeNode start = huffmanRoot;
 		for (int i = 0; i < encoded.length(); i++) {
 			// rules for traversing the tree
@@ -210,7 +189,7 @@ public abstract class Compression {
 			}
 			// if you hit a leaf node just add its value and restart the tree
 			if (start instanceof Leaf) {
-				decoded += ((Leaf) start).getCharacter();
+				decoded.append(((Leaf) start).getCharacter());
 				start = huffmanRoot;
 			}
 		}
@@ -229,97 +208,8 @@ public abstract class Compression {
 
 	public static String decompress(String compressedOutputPath, String encodedHuffmanOutputPath) throws IOException {
 		next = -1;
-		TreeNode reconstructedHuffmanTree = readEncodedHuffman(encodedHuffmanOutputPath);
-		return readAndDecode(compressedOutputPath, reconstructedHuffmanTree);
-	}
-
-	// used for testing
-	public static void main(String[] args) throws IOException {
-		String compressedFilePath = "D:\\Compression\\outputCompressed.txt";
-		String huffmanFilePath = "D:\\Compression\\outputHuffman.txt";
-		String input = "<users>\r\n"
-				+ "    <user>\r\n"
-				+ "        <id>1</id>\r\n"
-				+ "        <name>Ahmed Ali</name>\r\n"
-				+ "        <posts>\r\n"
-				+ "            <post>\r\n"
-				+ "                <body>\r\n"
-				+ "                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n"
-				+ "                </body>\r\n"
-				+ "                <topics>\r\n"
-				+ "                    <topic>\r\n"
-				+ "                        economy\r\n"
-				+ "                    </topic>\r\n"
-				+ "                    <topic>\r\n"
-				+ "                        finance\r\n"
-				+ "                    </topic>\r\n"
-				+ "                </topics>\r\n"
-				+ "            </post>\r\n"
-				+ "            <post>\r\n"
-				+ "                <body>\r\n"
-				+ "                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n"
-				+ "                </body>\r\n"
-				+ "                <topics>\r\n"
-				+ "                    <topic>\r\n"
-				+ "                        solar_energy\r\n"
-				+ "                    </topic>\r\n"
-				+ "                </topics>\r\n"
-				+ "            </post>\r\n"
-				+ "        </posts>\r\n"
-				+ "        <followers>\r\n"
-				+ "            <follower>\r\n"
-				+ "                <id>2</id>\r\n"
-				+ "            </follower>\r\n"
-				+ "            <follower>\r\n"
-				+ "                <id>3</id>\r\n"
-				+ "            </follower>\r\n"
-				+ "        </followers>\r\n"
-				+ "    </user>\r\n"
-				+ "    <user>\r\n"
-				+ "        <id>2</id>\r\n"
-				+ "        <name>Yasser Ahmed</name>\r\n"
-				+ "        <posts>\r\n"
-				+ "            <post>\r\n"
-				+ "                <body>\r\n"
-				+ "                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n"
-				+ "                </body>\r\n"
-				+ "                <topics>\r\n"
-				+ "                    <topic>\r\n"
-				+ "                        education\r\n"
-				+ "                    </topic>\r\n"
-				+ "                </topics>\r\n"
-				+ "            </post>\r\n"
-				+ "        </posts>\r\n"
-				+ "        <followers>\r\n"
-				+ "            <follower>\r\n"
-				+ "                <id>1</id>\r\n"
-				+ "            </follower>\r\n"
-				+ "        </followers>\r\n"
-				+ "    </user>\r\n"
-				+ "    <user>\r\n"
-				+ "        <id>3</id>\r\n"
-				+ "        <name>Mohamed Sherif</name>\r\n"
-				+ "        <posts>\r\n"
-				+ "            <post>\r\n"
-				+ "                <body>\r\n"
-				+ "                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n"
-				+ "                </body>\r\n"
-				+ "                <topics>\r\n"
-				+ "                    <topic>\r\n"
-				+ "                        sports\r\n"
-				+ "                    </topic>\r\n"
-				+ "                </topics>\r\n"
-				+ "            </post>\r\n"
-				+ "        </posts>\r\n"
-				+ "        <followers>\r\n"
-				+ "            <follower>\r\n"
-				+ "                <id>1</id>\r\n"
-				+ "            </follower>\r\n"
-				+ "        </followers>\r\n"
-				+ "    </user>\r\n"
-				+ "</users>";
-		Compression.compress(input, compressedFilePath, huffmanFilePath);
-		System.out.println(Compression.decompress(compressedFilePath, huffmanFilePath));
+		TreeNode reconstructedHuffmanTree = decodeHuffmanTree(readBinaryFromFile(encodedHuffmanOutputPath).toString());
+		return decode(readBinaryFromFile(compressedOutputPath) , reconstructedHuffmanTree).toString();
 	}
 
 }
