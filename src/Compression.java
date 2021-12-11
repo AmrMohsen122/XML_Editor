@@ -62,9 +62,9 @@ public abstract class Compression {
 		DataOutputStream dataOS = new DataOutputStream(fileOS);
 		byte flag = 0;
 		String toInt = "";
-		byte remainder = (byte) (8 - binary.length() % 8);
+		byte remainder = (byte) (binary.length() % 8);
 		if (remainder != 0) {
-			flag = remainder;
+			flag = (byte)(8 - remainder);
 		}
 		dataOS.writeByte(flag);
 		for (int i = 0; i < binary.length(); i++) {
@@ -78,17 +78,13 @@ public abstract class Compression {
 		// if the string length is not divisible by 8 the previous loop will terminate
 		// with some bits not added
 		// so pad and add the rest of the bits in that case
-		for (; remainder != 0; remainder--) {
+		for (; flag != 0; flag--) {
 			toInt += '0';
-			if (remainder == 1) {
+			if (flag == 1) {
 				dataOS.writeByte(Integer.parseInt(toInt, 2));
 			}
 		}
 		dataOS.close();
-	}
-	
-	private static void writeEncodedHuffman(String encodedHuffman, String encodedHuffmanOutputPath) throws IOException {
-		writeBinaryToFile(encodedHuffman, encodedHuffmanOutputPath);
 	}
 
 	private static TreeNode decodeHuffmanTree(String encoded) {
@@ -130,7 +126,9 @@ public abstract class Compression {
 		for (int i = 1; i < count; i++) {
 			encoded.append(String.format("%8s", Integer.toBinaryString(read[i] & 0xFF)).replace(' ', '0'));
 		}
-		encoded.delete(encoded.length() - flag, encoded.length());
+		if(flag != 0) {
+			encoded.delete(encoded.length() - flag, encoded.length());
+		}
 		return decodeHuffmanTree(encoded.toString());
 	}
 
@@ -176,10 +174,6 @@ public abstract class Compression {
 		return encoded;
 	}
 
-	private static void writeEncoded(String encoded, String outputFilePath) throws IOException {
-		writeBinaryToFile(encoded , outputFilePath);
-	}
-
 	private static String readAndDecode(String outputFilePath, TreeNode huffmanRoot) throws IOException {
 		// create a buffered reader to read the encoded line
 		StringBuffer encoded = new StringBuffer();
@@ -197,7 +191,9 @@ public abstract class Compression {
 		for (int i = 1; i < count; i++) {
 			encoded.append(String.format("%8s", Integer.toBinaryString(read[i] & 0xFF)).replace(' ', '0'));
 		}
-		encoded.delete(encoded.length() - flag, encoded.length());
+		if(flag != 0) {
+			encoded.delete(encoded.length() - flag, encoded.length());
+		}
 		return decode(encoded.toString(), huffmanRoot);
 	}
 
@@ -226,9 +222,9 @@ public abstract class Compression {
 			throws IOException {
 		huffmanRoot = null;
 		String encodedXML = encode(xmlContent);
-		writeEncoded(encodedXML, compressedOutputPath);
+		writeBinaryToFile(encodedXML, compressedOutputPath);
 		String encodedHuffman = binarfyHuffmanTree(huffmanRoot);
-		writeEncodedHuffman(encodedHuffman, encodedHuffmanOutputPath);
+		writeBinaryToFile(encodedHuffman, encodedHuffmanOutputPath);
 	}
 
 	public static String decompress(String compressedOutputPath, String encodedHuffmanOutputPath) throws IOException {
@@ -241,7 +237,87 @@ public abstract class Compression {
 	public static void main(String[] args) throws IOException {
 		String compressedFilePath = "D:\\Compression\\outputCompressed.txt";
 		String huffmanFilePath = "D:\\Compression\\outputHuffman.txt";
-		String input = "h\nl";
+		String input = "<users>\r\n"
+				+ "    <user>\r\n"
+				+ "        <id>1</id>\r\n"
+				+ "        <name>Ahmed Ali</name>\r\n"
+				+ "        <posts>\r\n"
+				+ "            <post>\r\n"
+				+ "                <body>\r\n"
+				+ "                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n"
+				+ "                </body>\r\n"
+				+ "                <topics>\r\n"
+				+ "                    <topic>\r\n"
+				+ "                        economy\r\n"
+				+ "                    </topic>\r\n"
+				+ "                    <topic>\r\n"
+				+ "                        finance\r\n"
+				+ "                    </topic>\r\n"
+				+ "                </topics>\r\n"
+				+ "            </post>\r\n"
+				+ "            <post>\r\n"
+				+ "                <body>\r\n"
+				+ "                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n"
+				+ "                </body>\r\n"
+				+ "                <topics>\r\n"
+				+ "                    <topic>\r\n"
+				+ "                        solar_energy\r\n"
+				+ "                    </topic>\r\n"
+				+ "                </topics>\r\n"
+				+ "            </post>\r\n"
+				+ "        </posts>\r\n"
+				+ "        <followers>\r\n"
+				+ "            <follower>\r\n"
+				+ "                <id>2</id>\r\n"
+				+ "            </follower>\r\n"
+				+ "            <follower>\r\n"
+				+ "                <id>3</id>\r\n"
+				+ "            </follower>\r\n"
+				+ "        </followers>\r\n"
+				+ "    </user>\r\n"
+				+ "    <user>\r\n"
+				+ "        <id>2</id>\r\n"
+				+ "        <name>Yasser Ahmed</name>\r\n"
+				+ "        <posts>\r\n"
+				+ "            <post>\r\n"
+				+ "                <body>\r\n"
+				+ "                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n"
+				+ "                </body>\r\n"
+				+ "                <topics>\r\n"
+				+ "                    <topic>\r\n"
+				+ "                        education\r\n"
+				+ "                    </topic>\r\n"
+				+ "                </topics>\r\n"
+				+ "            </post>\r\n"
+				+ "        </posts>\r\n"
+				+ "        <followers>\r\n"
+				+ "            <follower>\r\n"
+				+ "                <id>1</id>\r\n"
+				+ "            </follower>\r\n"
+				+ "        </followers>\r\n"
+				+ "    </user>\r\n"
+				+ "    <user>\r\n"
+				+ "        <id>3</id>\r\n"
+				+ "        <name>Mohamed Sherif</name>\r\n"
+				+ "        <posts>\r\n"
+				+ "            <post>\r\n"
+				+ "                <body>\r\n"
+				+ "                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n"
+				+ "                </body>\r\n"
+				+ "                <topics>\r\n"
+				+ "                    <topic>\r\n"
+				+ "                        sports\r\n"
+				+ "                    </topic>\r\n"
+				+ "                </topics>\r\n"
+				+ "            </post>\r\n"
+				+ "        </posts>\r\n"
+				+ "        <followers>\r\n"
+				+ "            <follower>\r\n"
+				+ "                <id>1</id>\r\n"
+				+ "            </follower>\r\n"
+				+ "        </followers>\r\n"
+				+ "    </user>\r\n"
+				+ "</users>";
 		Compression.compress(input, compressedFilePath, huffmanFilePath);
 		System.out.println(Compression.decompress(compressedFilePath, huffmanFilePath));
 	}
