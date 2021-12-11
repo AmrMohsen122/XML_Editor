@@ -6,7 +6,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-//TODO CREATE A FILE AND ADD THE BINARY CODE TO IT
 
 public abstract class Compression {
 	private final static int NUMBER_CHAR = 256;
@@ -57,25 +56,28 @@ public abstract class Compression {
 		}
 		return temp.toString();
 	}
-
-	private static void writeEncodedHuffman(String encodedHuffman, String encodedHuffmanOutputPath) throws IOException {
-		FileOutputStream fileOS = new FileOutputStream(encodedHuffmanOutputPath);
+	
+	private static void writeBinaryToFile(String binary , String filePath) throws IOException{
+		FileOutputStream fileOS = new FileOutputStream(filePath);
 		DataOutputStream dataOS = new DataOutputStream(fileOS);
 		byte flag = 0;
 		String toInt = "";
-		byte remainder = (byte) (8 - encodedHuffman.length() % 8);
+		byte remainder = (byte) (8 - binary.length() % 8);
 		if (remainder != 0) {
 			flag = remainder;
 		}
 		dataOS.writeByte(flag);
-		for (int i = 0; i < encodedHuffman.length(); i++) {
-			toInt += encodedHuffman.charAt(i);
+		for (int i = 0; i < binary.length(); i++) {
+			toInt += binary.charAt(i);
 			// everytime you concat. 8 bits write them as a byte to the file
 			if ((i + 1) % 8 == 0) {
 				dataOS.writeByte(Integer.parseInt(toInt, 2));
 				toInt = "";
 			}
 		}
+		// if the string length is not divisible by 8 the previous loop will terminate
+		// with some bits not added
+		// so pad and add the rest of the bits in that case
 		for (; remainder != 0; remainder--) {
 			toInt += '0';
 			if (remainder == 1) {
@@ -83,6 +85,10 @@ public abstract class Compression {
 			}
 		}
 		dataOS.close();
+	}
+	
+	private static void writeEncodedHuffman(String encodedHuffman, String encodedHuffmanOutputPath) throws IOException {
+		writeBinaryToFile(encodedHuffman, encodedHuffmanOutputPath);
 	}
 
 	private static TreeNode decodeHuffmanTree(String encoded) {
@@ -171,34 +177,7 @@ public abstract class Compression {
 	}
 
 	private static void writeEncoded(String encoded, String outputFilePath) throws IOException {
-		FileOutputStream fileOS = new FileOutputStream(outputFilePath);
-		DataOutputStream os = new DataOutputStream(fileOS);
-		String toInt = "";
-		byte flag = 0;
-		byte remainder = (byte) (8 - (encoded.length() % 8));
-		if (remainder != 0) {
-			flag = remainder;
-		}
-		os.writeByte(flag);
-		for (int i = 0; i < encoded.length(); i++) {
-			toInt += encoded.charAt(i);
-			// everytime you concat. 8 bits write them as a byte to the file
-			if ((i + 1) % 8 == 0) {
-				os.writeByte(Integer.parseInt(toInt, 2));
-				toInt = "";
-			}
-
-		}
-		// if the string length is not divisible by 8 the previous loop will terminate
-		// with some bits not added
-		// so pad and add the rest of the bits in that case
-		for (; remainder != 0; remainder--) {
-			toInt += '0';
-			if (remainder == 1) {
-				os.writeByte(Integer.parseInt(toInt, 2));
-			}
-		}
-		os.close();
+		writeBinaryToFile(encoded , outputFilePath);
 	}
 
 	private static String readAndDecode(String outputFilePath, TreeNode huffmanRoot) throws IOException {
@@ -262,7 +241,9 @@ public abstract class Compression {
 	public static void main(String[] args) throws IOException {
 		String compressedFilePath = "D:\\Compression\\outputCompressed.txt";
 		String huffmanFilePath = "D:\\Compression\\outputHuffman.txt";
-		
+		String input = "h\nl";
+		Compression.compress(input, compressedFilePath, huffmanFilePath);
+		System.out.println(Compression.decompress(compressedFilePath, huffmanFilePath));
 	}
 
 }
