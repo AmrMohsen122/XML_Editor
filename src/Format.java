@@ -3,13 +3,16 @@ import java.util.*
 public class Format {
 	public static String Format(String unformatted) {
 		int level = 0;
+		Stack<String> stack = new Stack();
 		List<String> textList = new ArrayList<String>();
 		int i = 0;
 		while (i < unformatted.length()-1) {
 			if (unformatted.charAt(i) == '<' && unformatted.charAt(i+1) == '?') {
 				int closingIndex = unformatted.indexOf('>', i);
-				String tagName = unformatted.substring(i+1, closingIndex);
+				String tagName = unformatted.substring(i+2, closingIndex);
+				textList.add(" ".repeat(level * 2) + "<?" + tagName + ">");
 				i = closingIndex + 1;
+				continue;
 			}
 			if (unformatted.charAt(i) == '<' && unformatted.charAt(i+1) != '/') {
 				int closingIndex = unformatted.indexOf('>', i);
@@ -41,9 +44,6 @@ public class Format {
 			textList.add(" ".repeat(level * 2) + text);
 			i = nextTagStartIndex;
 		}
-		for (int j=0; j<textList.size(); j++) {
-			System.out.println(textList.get(j));
-		}
-		return unformatted;
+		return String.join("\n", textList);
 	}
 }
