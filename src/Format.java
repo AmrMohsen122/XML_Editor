@@ -3,7 +3,6 @@ import java.util.*
 public class Format {
 	public static String Format(String unformatted) {
 		int level = 0;
-		Stack<String> stack = new Stack();
 		List<String> textList = new ArrayList<String>();
 		int i = 0;
 		while (i < unformatted.length()-1) {
