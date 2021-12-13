@@ -2,18 +2,27 @@ import java.util.Stack;
 import java.util.*;
 public class ErrorDetect {
     
-        static Stack<String> s = new Stack<String>();
+    static Stack<String> s = new Stack<String>();
     static StringBuffer newXML;
     static Vector<Integer> errorIndecies = new Vector<Integer>(1);
+    static Vector<String> errorCodes = new Vector<String>();
+    
+    
+    
+    static int findPreviousLine(int index, StringBuffer str) {
+        int j = index;
+        for (; str.charAt(j) != 10; j--);
 
-    /*
-        static int incrementIndex(int index, String str){
-        
-            for(int i = 0;  i<= str.length();i++)
-            index++;
-            return index;
-        }
-     */
+        return j;
+    }
+
+    static int incrementIndex(int index, String str) {
+
+        for (int i = 0; i < str.length(); i++, index++);
+
+        return index;
+    }
+
     static StringBuffer removeSpace(StringBuffer str) {
         StringBuffer formattedXML = new StringBuffer(str);
 
@@ -50,8 +59,8 @@ public class ErrorDetect {
 
     }
 
-    static Boolean error(StringBuffer str) {
-
+    static void error(StringBuffer str) {
+       
         newXML = new StringBuffer(str);
 
         Boolean tagValue = false;
@@ -66,7 +75,7 @@ public class ErrorDetect {
             if (str.charAt(index) == '<') {
 
                 newXMLindex++;
-                index++;                   //momken a3mlha b i = index +1  badal m a3ml fe index 3la tool
+                index++;                   
 
                 if (str.charAt(index) == '?') {
 
@@ -80,7 +89,7 @@ public class ErrorDetect {
                             if (str.charAt(index) == '-' && str.charAt(index - 1) == '-') {
                                 occurence++;
                                 if (occurence > 1) {
-                                    System.out.println("Comment format is Incorrect at line: " + count + 1);
+                                    errorCodes.add("Comment format is Incorrect at line: " + count + 1);
                                     errorIndecies.add(count + 1);
                                 }
                             }
@@ -89,103 +98,137 @@ public class ErrorDetect {
 
                     }
                     if (str.charAt(index - 1) != '-' || str.charAt(index - 2) != '-') {
-                        System.out.println("Comment format is Incorrect at line: " + count + 1);
+                        errorCodes.add("Comment format is Incorrect at line: " + count + 1);
                         errorIndecies.add(count + 1);
                     }
 
-                } else if (str.charAt(index) != '/' /*&& !Character.isWhitespace(str.charAt(index))*/) {
-                   
+                } else if (str.charAt(index) != '/' ) {
 
                     String tagStr = getTag(str, index);
-                    //el function deh msh mzbota 3amlha 3shan case en el root node bta3 child node mt2flsh bs el child et2fl
+                    
+                    
                     if (!s.empty() && tagStr.equals(s.peek())) {
-                        errorIndecies.add(count);
-                        int j = newXMLindex;
-                        String unmatchingTag = new String("</" + s.peek() + ">");
-                        System.out.println("Closing tag not found \n" + unmatchingTag + "\n");
                         
-                        for (; newXML.charAt(j) != 10; j--);
+                        errorIndecies.add(count);
+                        
+                        String unmatchingTag = new String("</" + s.peek() + ">");
+                        errorCodes.add("Closing tag not found: " + unmatchingTag );
+                        
+                        int j = findPreviousLine(newXMLindex, newXML);
+                        
 
                         insertTag(newXML, j, unmatchingTag);
                         s.pop();
-                        for (int i = 0; i < unmatchingTag.length(); newXMLindex++, i++);
+                        newXMLindex = incrementIndex(newXMLindex, unmatchingTag);
+                        
                     }
                     s.push(tagStr);
-                    System.out.println(s);
+                    
                 } else if (str.charAt(index) == '/') {
                     index++;
                     newXMLindex++;
                     String closingTag = getTag(str, index);
+
                     //code for correcting the error in case of a missing openning tag
-
-                    if (!s.empty()  && !s.peek().equals(closingTag)) {
+                    if (!s.empty() && !s.peek().equals(closingTag) && tagValue) {
                         errorIndecies.add(count + 1);
-                        System.out.println("Unmatched opening tag or missing openning tag");
-                        int j = newXMLindex;
-
-                        for (; newXML.charAt(j) != 10; j--);
+                        errorCodes.add("Missing openning tag: " + '<'+closingTag+'>');
+                        int j = findPreviousLine(newXMLindex, newXML);
                         j++;
-                        
+
                         String unmacthedTag = new String("<" + closingTag + ">");
                         insertTag(newXML, j, unmacthedTag);
 
-                        for (int i = 0; i < unmacthedTag.length(); i++, newXMLindex++);
+                        for (int i = 0; i < unmacthedTag.length(); i++, newXMLindex++, j++);
+
+                        if (newXML.charAt(j) == '<') {
+                            j++;
+                            j++;
+                            if (getTag(newXML, j).equals(closingTag)) {
+                                
+                                continue;
+                            }
+                            //We always assume that in case of mismatching tags that the closing tag is the correct one   
+                            else {
+                                j--;
+
+                                newXML.deleteCharAt(--j);
+
+                                newXMLindex--;
+
+                                //String tagToRemove = s.peek();
+                                for (int k = 0; newXML.charAt(j) != '>'; k++, newXMLindex--) {
+
+                                    newXML.deleteCharAt(j);
+
+                                    //newXMLindex++;
+                                }
+                                newXML.deleteCharAt(j);
+                                newXMLindex--;
+                                s.pop();
+
+                            }
+
+                        }
 
                         tagValue = false;
                         continue;
+                        
+                    } 
+                    //case for correcting in case the closing tag of a parent node is missing after the closing tag of its child
+                    else if (!s.empty() && !s.peek().equals(closingTag) && !tagValue) {
+                        int j = findPreviousLine(newXMLindex, newXML);
+
+                        String missingParentClosing = new String("</" + s.peek() + ">");
+                        insertTag(newXML, j, missingParentClosing);
+                        newXMLindex = incrementIndex(newXMLindex, missingParentClosing);
+
+                        s.pop();
+                        errorCodes.add("Missing closing parent tag: " + missingParentClosing );
+                        errorIndecies.add(count);
                     }
 
                     if (!s.empty()) {
                         s.pop();
-                    } else {
-                        String rootTag = new String("<" + closingTag + ">");
-                        insertTag(newXML, 0, rootTag);
-                        for (int i = 0; i < rootTag.length(); i++, newXMLindex++);
-
-                        errorIndecies.add(0);
+                        
+                        tagValue = false;
+                        
                     }
-                    tagValue = false;
-                    System.out.println(s);
-
                 }
-            } else if (Character.isLetterOrDigit(str.charAt(index)) && ( str.charAt(index - 1) == '>' || str.charAt(index-2)=='>')) {
+            } else if ((Character.isLetterOrDigit(str.charAt(index)) && (str.charAt(index - 1) == '>' || str.charAt(index - 2) == '>')) || (Character.isLetterOrDigit(str.charAt(index)) && str.charAt(index + 1) == '<')) {
 
                 tagValue = true;
-
-                for (; str.charAt(index) != 10 && str.charAt(index) != '<'; index++, newXMLindex++);
-
-                index--;
-                newXMLindex--;
-
+               
             }
-             //function for correcting in case there is no closing tag for a certain node
+            //function for correcting in case there is no closing tag for a certain node
             if (str.charAt(index) == 10 && tagValue) {
 
                 errorIndecies.add(count);
                 String unmatchingTag = new String("</" + s.peek() + ">");
-                System.out.println("Closing tag not found \n" + unmatchingTag + "\n");
-                //3ayz ala2y 7al fe index - 4 w index - 2 w kdh
+                errorCodes.add("Closing tag not found: " + unmatchingTag);
+                
                 insertTag(newXML, newXMLindex, unmatchingTag);
 
                 s.pop();
                 tagValue = false;
-
-                for (int i = 0; i < unmatchingTag.length(); newXMLindex++, i++);
+                newXMLindex = incrementIndex(newXMLindex, unmatchingTag);
+                
 
             }
             continue;
 
         }
 
-        if (s.empty()) {
-            System.out.println("XML file is without errors");
-        } else {
+        if (errorIndecies.isEmpty()) {
+            
+            errorCodes.add("XML file is without Errors");
+        } else if (!s.empty() && newXMLindex == newXML.length() - 1) {
             insertTag(newXML, newXMLindex, "</" + s.peek() + ">");
             errorIndecies.add(count + 1);
             s.pop();
-            System.out.println("XML file contains errors");
+            
         }
-        return s.empty();
+        
     }
 
 }
