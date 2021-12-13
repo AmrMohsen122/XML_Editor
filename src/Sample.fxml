@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.text.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.BorderPane?>
+
+<BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.SampleController">
+   <bottom>
+      <AnchorPane prefHeight="768.0" prefWidth="1000.0" style="-fx-background-image: url('file:C:/Users/Samra/eclipse-workspace/GUI/bg.jpg'); -fx-background-color: #363636;" BorderPane.alignment="CENTER">
+         <children>
+            <TextArea fx:id="XmlTextArea" layoutX="18.0" layoutY="70.0" prefHeight="628.0" prefWidth="483.0" />
+            <TextField alignment="CENTER" layoutX="229.0" layoutY="39.0" prefHeight="31.0" prefWidth="62.0" text="XML">
+               <font>
+                  <Font name="Gadugi Bold" size="15.0" />
+               </font>
+            </TextField>
+            <Button fx:id="CorrectBtn" layoutX="189.0" layoutY="711.0" mnemonicParsing="false" onAction="#correct" text="Correct" />
+            <Button layoutX="451.0" layoutY="711.0" mnemonicParsing="false" text="Format" />
+            <Button layoutX="367.0" layoutY="711.0" mnemonicParsing="false" text="Minify" />
+            <Button fx:id="CompressBtn" layoutX="536.0" layoutY="711.0" mnemonicParsing="false" onAction="#Compress" text="Compress" />
+            <Button fx:id="convert" layoutX="759.0" layoutY="711.0" mnemonicParsing="false" onAction="#Xml_Json" text="to Json" />
+            <Button fx:id="file" layoutY="-1.0" mnemonicParsing="false" onAction="#hello" text="File" />
+            <Button fx:id="DetectErrorsBtn1" layoutX="276.0" layoutY="711.0" mnemonicParsing="false" text="Validate" />
+            <TextArea fx:id="XmlTextArea1" layoutX="501.0" layoutY="70.0" prefHeight="628.0" prefWidth="483.0" />
+            <Button fx:id="DeCompressbtn" layoutX="641.0" layoutY="711.0" mnemonicParsing="false" onAction="#DeCompress" text="Decompress" />
+         </children>
+      </AnchorPane>
+   </bottom>
+</BorderPane>
