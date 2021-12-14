@@ -9,6 +9,9 @@ import javafx.stage.Window;
 import javafx.event.*;
 import javafx.fxml.*;
 import java.util.*;
+
+import Testproject.Minifying;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
@@ -34,8 +37,10 @@ public class SampleController implements Initializable {
 	private Button DeCompressbtn;
 	@FXML
 	private Button convert;
-	
-
+	@FXML
+	private Button formatBtn;
+	@FXML
+	private Button minifyBtn;
 
 	@FXML
 	private void hello(ActionEvent event) {
@@ -66,28 +71,12 @@ public class SampleController implements Initializable {
 
 	@FXML
 	private void Compress(ActionEvent event) {
-		String mohsen="";
+		String mohsen = "";
 		try {
 			Compression.compress(content, "C:\\Users\\Samra\\Desktop\\fady1.txt",
 					"C:\\Users\\Samra\\Desktop\\fady2.txt");
-			
-			mohsen= new String(Files.readAllBytes(Paths.get("C:\\Users\\Samra\\Desktop\\fady1.txt")));
 
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		XmlTextArea1.setText(mohsen);	
-	}
-	
-	@FXML
-	private void DeCompress(ActionEvent event) {
-		String mohsen="";
-		try {
-			
-			mohsen=Compression.decompress( "C:\\Users\\Samra\\Desktop\\fady1.txt",
-					"C:\\Users\\Samra\\Desktop\\fady2.txt");
-			
+			mohsen = new String(Files.readAllBytes(Paths.get("C:\\Users\\Samra\\Desktop\\fady1.txt")));
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -95,23 +84,55 @@ public class SampleController implements Initializable {
 		}
 		XmlTextArea1.setText(mohsen);
 	}
+
 	@FXML
-	private void Xml_Json (ActionEvent event)
-	{
-		ArrayList <String> arrayListXml = new ArrayList<>();
+	private void DeCompress(ActionEvent event) {
+		String mohsen = "";
+		try {
+
+			mohsen = Compression.decompress("C:\\Users\\Samra\\Desktop\\fady1.txt",
+					"C:\\Users\\Samra\\Desktop\\fady2.txt");
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		XmlTextArea1.setText(mohsen);
+	}
+
+	@FXML
+	private void Xml_Json(ActionEvent event) {
+		ArrayList<String> arrayListXml = new ArrayList<>();
+		content=Minifying.removeLines(content);
+		content=Minifying.minify(content);
 		Tree.parsing_xml(content, arrayListXml);
+		for (int i = 0; i < arrayListXml.size(); i++) {
+			 arrayListXml.set(i, Minifying.stringTrim(arrayListXml.get(i), '<', '>'));
+		}
 		Node root = new Node();
-		
+
 		root.setTagName(arrayListXml.get(0));
-		Index i=new Index(1);
+		Index i = new Index(1);
 		Tree.filltree2(root, arrayListXml, i);
-		
+
 		StringBuffer n = new StringBuffer();
-		Tree.toJson (root , n);
-		n=Tree.removeJsonEmptyLines(n);
-		n=Tree.formattingJson(n);
+		Tree.toJson(root, n);
+		n = Tree.removeJsonEmptyLines(n);
+		n = Tree.formattingJson(n);
 		XmlTextArea1.setText(n.toString());
 	}
+
+	@FXML
+	private void format(ActionEvent event) {
+		XmlTextArea1.setText(Format.Format(content));
+	}
+
+	@FXML
+	private void minify(ActionEvent event) {
+		XmlTextArea1.setText(Minifying.minify(content));
+	}
+	
+
 	@Override
 	public void initialize(URL arg0, ResourceBundle arg1) {
 		// TODO Auto-generated method stub
