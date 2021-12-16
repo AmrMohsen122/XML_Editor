@@ -1,17 +1,13 @@
 package application;
 
-import javafx.scene.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import javafx.stage.Window;
 import javafx.event.*;
 import javafx.fxml.*;
 import java.util.*;
-
-import Testproject.Minifying;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
@@ -41,6 +37,10 @@ public class SampleController implements Initializable {
 	private Button formatBtn;
 	@FXML
 	private Button minifyBtn;
+	@FXML
+	private static String currentFileName;
+	@FXML
+	private Button validateBtn;
 
 	@FXML
 	private void hello(ActionEvent event) {
@@ -58,7 +58,7 @@ public class SampleController implements Initializable {
 		} catch (IOException fg) {
 			fg.printStackTrace();
 		}
-
+		currentFileName = selectedFile.getName();
 		XmlTextArea.setText(xml);
 	}
 
@@ -66,17 +66,26 @@ public class SampleController implements Initializable {
 	private void correct(ActionEvent event) {
 		StringBuffer str = new StringBuffer(content);
 		ErrorDetect.error(ErrorDetect.removeSpace(str));
-		XmlTextArea1.setText(ErrorDetect.newXML.toString());
+		content = Format.Format(ErrorDetect.newXML.toString());
+		XmlTextArea1.setText(content);
 	}
-
+	
 	@FXML
 	private void Compress(ActionEvent event) {
+		AlertBox.display("Alert!!", "Please select the location where you want to export your compressed files!");
 		String mohsen = "";
 		try {
-			Compression.compress(content, "C:\\Users\\Samra\\Desktop\\fady1.txt",
-					"C:\\Users\\Samra\\Desktop\\fady2.txt");
+			DirectoryChooser choose = new DirectoryChooser();
+			File selected = choose.showDialog(null);
 
-			mohsen = new String(Files.readAllBytes(Paths.get("C:\\Users\\Samra\\Desktop\\fady1.txt")));
+			File f1 = new File(selected.getAbsolutePath() + "output_" + currentFileName);
+			f1.createNewFile();
+			File f2 = new File(selected.getAbsolutePath() + "huffman_" + currentFileName);
+			f2.createNewFile();
+			if (!content.equals("")) {
+				Compression.compress(content, f1.getAbsolutePath(), f2.getAbsolutePath());
+				mohsen = new String(Files.readAllBytes(Paths.get(f1.getAbsolutePath())));
+			}
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -87,11 +96,18 @@ public class SampleController implements Initializable {
 
 	@FXML
 	private void DeCompress(ActionEvent event) {
+		AlertBox.display("Alert!!", "Please select the corrected 2 compressed files");
 		String mohsen = "";
 		try {
+			FileChooser fileChooser = new FileChooser();
 
-			mohsen = Compression.decompress("C:\\Users\\Samra\\Desktop\\fady1.txt",
-					"C:\\Users\\Samra\\Desktop\\fady2.txt");
+			File selectedFile1 = fileChooser.showOpenDialog(null);
+			File selectedFile2 = fileChooser.showOpenDialog(null);
+			if (selectedFile1.getName().substring(0, 7).equals("output_")) {
+				mohsen = Compression.decompress(selectedFile1.getAbsolutePath(), selectedFile2.getAbsolutePath());
+			} else if (selectedFile1.getName().substring(0, 8).equals("huffman_")) {
+				mohsen = Compression.decompress(selectedFile2.getAbsolutePath(), selectedFile1.getAbsolutePath());
+			}
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -103,11 +119,11 @@ public class SampleController implements Initializable {
 	@FXML
 	private void Xml_Json(ActionEvent event) {
 		ArrayList<String> arrayListXml = new ArrayList<>();
-		content=Minifying.removeLines(content);
-		content=Minifying.minify(content);
+		content = Minifying.removeLines(content);
+		content = Minifying.minify(content);
 		Tree.parsing_xml(content, arrayListXml);
 		for (int i = 0; i < arrayListXml.size(); i++) {
-			 arrayListXml.set(i, Minifying.stringTrim(arrayListXml.get(i), '<', '>'));
+			arrayListXml.set(i, Minifying.stringTrim(arrayListXml.get(i), '<', '>'));
 		}
 		Node root = new Node();
 
@@ -131,7 +147,37 @@ public class SampleController implements Initializable {
 	private void minify(ActionEvent event) {
 		XmlTextArea1.setText(Minifying.minify(content));
 	}
-	
+
+	@FXML
+	private void validate(ActionEvent event) {
+
+		StringBuffer val = new StringBuffer(ErrorDetect.removeSpace(new StringBuffer(content)));
+		ErrorDetect.error(val);
+		if (ErrorDetect.errorIndecies.size() != 0) {
+			int count = 0;
+			int j = 0;
+			int i = 0;
+			for (; i < val.length(); i++) {
+
+				if (i < val.length() && val.charAt(i) == 10)
+					count++;
+
+				if (j < ErrorDetect.errorIndecies.size() && count == ErrorDetect.errorIndecies.get(j)) {
+
+					val.insert(i, "    <-------- Error Here!!!!");
+					for (; i < val.length() && val.charAt(i) != 10; i++)
+						;
+
+					j++;
+
+				}
+
+			}
+			XmlTextArea1.setText(val.toString());
+		} else {
+			XmlTextArea1.setText("The XML file is correct!");
+		}
+	}
 
 	@Override
 	public void initialize(URL arg0, ResourceBundle arg1) {
