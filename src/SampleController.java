@@ -8,7 +8,9 @@ import javafx.stage.FileChooser;
 import javafx.event.*;
 import javafx.fxml.*;
 import java.util.*;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.*;
 import java.nio.file.Files;
@@ -18,7 +20,9 @@ public class SampleController implements Initializable {
 	@FXML
 	private Label label;
 	@FXML
-	private Button file;
+	private Button openBtn;
+	@FXML
+	private Button saveBtn;
 	@FXML
 	private Button Correct;
 	@FXML
@@ -69,14 +73,13 @@ public class SampleController implements Initializable {
 		content = Format.Format(ErrorDetect.newXML.toString());
 		XmlTextArea1.setText(content);
 	}
-	
+
 	@FXML
 	private void Compress(ActionEvent event) {
 		AlertBox.display("Alert!!", "Please select the location where you want to export your compressed files!");
-		String mohsen = "";
+		DirectoryChooser choose = new DirectoryChooser();
+		File selected = choose.showDialog(null);
 		try {
-			DirectoryChooser choose = new DirectoryChooser();
-			File selected = choose.showDialog(null);
 
 			File f1 = new File(selected.getAbsolutePath() + "output_" + currentFileName);
 			f1.createNewFile();
@@ -84,36 +87,35 @@ public class SampleController implements Initializable {
 			f2.createNewFile();
 			if (!content.equals("")) {
 				Compression.compress(content, f1.getAbsolutePath(), f2.getAbsolutePath());
-				mohsen = new String(Files.readAllBytes(Paths.get(f1.getAbsolutePath())));
 			}
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		XmlTextArea1.setText(mohsen);
+		XmlTextArea1.setText("The compressed files is in: " + selected.getAbsolutePath());
 	}
 
 	@FXML
 	private void DeCompress(ActionEvent event) {
 		AlertBox.display("Alert!!", "Please select the corrected 2 compressed files");
-		String mohsen = "";
+		String deCompressedStr = "";
 		try {
 			FileChooser fileChooser = new FileChooser();
 
 			File selectedFile1 = fileChooser.showOpenDialog(null);
 			File selectedFile2 = fileChooser.showOpenDialog(null);
 			if (selectedFile1.getName().substring(0, 7).equals("output_")) {
-				mohsen = Compression.decompress(selectedFile1.getAbsolutePath(), selectedFile2.getAbsolutePath());
+				deCompressedStr = Compression.decompress(selectedFile1.getAbsolutePath(), selectedFile2.getAbsolutePath());
 			} else if (selectedFile1.getName().substring(0, 8).equals("huffman_")) {
-				mohsen = Compression.decompress(selectedFile2.getAbsolutePath(), selectedFile1.getAbsolutePath());
+				deCompressedStr = Compression.decompress(selectedFile2.getAbsolutePath(), selectedFile1.getAbsolutePath());
 			}
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		XmlTextArea1.setText(mohsen);
+		XmlTextArea1.setText(deCompressedStr);
 	}
 
 	@FXML
@@ -178,6 +180,37 @@ public class SampleController implements Initializable {
 			XmlTextArea1.setText("The XML file is correct!");
 		}
 	}
+
+	@FXML
+	private void save(ActionEvent event) {
+		DirectoryChooser choose = new DirectoryChooser();
+		File selected = choose.showDialog(null);
+		try {
+
+			File f1 = new File(selected.getAbsolutePath()+"SavedFile.txt");
+			f1.createNewFile();
+			try{
+				  // Create file 
+				  FileWriter fstream = new FileWriter(f1.getAbsolutePath());
+				  BufferedWriter out = new BufferedWriter(fstream);
+				  out.write(XmlTextArea1.getText());
+				  //Close the output stream
+				  out.close();
+				  }catch (Exception e){//Catch exception if any
+				  System.err.println("Error: " + e.getMessage());
+				  }
+			
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//XmlTextArea1.setText("The compressed files is in: " + selected.getAbsolutePath());
+	}
+	
+		
+
+	
 
 	@Override
 	public void initialize(URL arg0, ResourceBundle arg1) {
