@@ -253,7 +253,44 @@ static void toJson(Node parent , StringBuffer s) {
 		
 		return s;
 	}
-	
+	static void parsing_XML(String sa,ArrayList<String> string) {
+	char space=32;
+	for (int i = 0; i < sa.length(); i++) {
+		if (sa.charAt(i)=='<'&&sa.charAt(i+1)=='!') {
+			while(sa.charAt(i)!='>') {
+				i++;
+				}
+			i++;
+		}
+		if (sa.charAt(i)=='<'&&sa.charAt(i+1)=='?') {
+			while(sa.charAt(i)!='>') {
+				i++;
+				}
+			i++;
+			
+		}
+		if (sa.charAt(i)==space||sa.charAt(i)=='\r'||sa.charAt(i)=='\n')continue;
+		else if (sa.charAt(i)=='<') {
+			StringBuffer temp=new StringBuffer();
+			while ((sa.charAt(i)!='>')) {
+				temp.append(sa.charAt(i));
+				i++;
+				}
+			temp.append(sa.charAt(i));
+			string.add(temp.toString());
+			}
+		else {
+			StringBuffer temp=new StringBuffer();
+			while((sa.charAt(i)!='<')) {
+				if (sa.charAt(i)=='\r'||sa.charAt(i)=='\n')break;
+				temp.append(sa.charAt(i));
+			i++;
+			}
+			string.add(temp.toString());
+			--i;
+		}
+	}
+}
 	
 	
 	
