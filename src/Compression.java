@@ -1,15 +1,8 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.PriorityQueue;
 
 public abstract class Compression {
@@ -39,8 +32,9 @@ public abstract class Compression {
 		result.append(binary);
 		return result;
 	}
+	
 	/************************ File Handling ******************/
-	// DONE
+
 	private static void writeBinaryToFile(StringBuilder binary, String filePath) throws IOException {
 		FileOutputStream fileOS = new FileOutputStream(filePath);
 		DataOutputStream dataOS = new DataOutputStream(fileOS);
@@ -56,7 +50,7 @@ public abstract class Compression {
 			if (binary.charAt(i) == '1') {
 				toByte |= (1 << count);
 			}
-			// everytime you concat. 8 bits write them as a byte to the file
+			// everytime you form 8 bits write them as a byte to the file
 			if (count == 0) {
 				dataOS.writeByte(toByte);
 				toByte = 0;
@@ -64,9 +58,7 @@ public abstract class Compression {
 			}
 			count--;
 		}
-		// if the string length is not divisible by 8 the previous loop will terminate
-		// with some bits not added
-		// so pad and add the rest of the bits in that case
+		// the last byte will be padded by zeros equal to the flag value
 		dataOS.writeByte(toByte);
 		dataOS.close();
 	}
@@ -94,10 +86,8 @@ public abstract class Compression {
 	/******************** TREE STROING AND READING ******************/
 
 	private static void encodeHuffmanTree(TreeNode root, StringBuilder s) {
-		// O(n)
 		if (root instanceof Leaf) {
 			s.append('0');
-			// O(1) since we are appending a single character
 			s.append(((Leaf) root).getCharacter());
 			return;
 		} else {
@@ -110,7 +100,6 @@ public abstract class Compression {
 	private static StringBuilder binarfyHuffmanTree(TreeNode huffmanRoot) {
 		StringBuilder sb = new StringBuilder();
 		StringBuilder temp = new StringBuilder();
-		// O(n)
 		encodeHuffmanTree(huffmanRoot, sb);
 		char current;
 		for (int i = 0; i < sb.length() - 1; i++) {
@@ -126,7 +115,6 @@ public abstract class Compression {
 		return temp;
 	}
 
-	// DONE
 	private static TreeNode decodeHuffmanTree(String encoded) {
 		// next should start from -1;
 		TreeNode decodedRoot;
@@ -157,7 +145,7 @@ public abstract class Compression {
 	}
 
 	/******************** ENCODING AND DECODING *******************/
-	// DONE
+	
 	private static StringBuilder encode(String s) {
 		int[] freqArray = new int[NUMBER_CHAR];
 		String[] replacementTable = new String[NUMBER_CHAR];
@@ -173,7 +161,7 @@ public abstract class Compression {
 			}
 		}
 		while (nodes.size() != 1) {
-			// remove the two smallest elements in the heap
+			// remove the two smallest elements in the heap, combine them into a parent node and re-insert it in the heap
 			TreeNode combined = new TreeNode(nodes.poll(), nodes.poll());
 			nodes.add(combined);
 		}
@@ -210,9 +198,9 @@ public abstract class Compression {
 	public static void compress(String xmlContent, String compressedOutputPath, String encodedHuffmanOutputPath)
 			throws IOException {
 		huffmanRoot = null;
-		StringBuilder encodedXML = encode(xmlContent); // O(NlogN)
-		writeBinaryToFile(encodedXML, compressedOutputPath); // O(N)
-		StringBuilder encodedHuffman = binarfyHuffmanTree(huffmanRoot); // O(N)
+		StringBuilder encodedXML = encode(xmlContent);
+		writeBinaryToFile(encodedXML, compressedOutputPath); 
+		StringBuilder encodedHuffman = binarfyHuffmanTree(huffmanRoot);
 		writeBinaryToFile(encodedHuffman, encodedHuffmanOutputPath);
 	}
 
@@ -220,18 +208,6 @@ public abstract class Compression {
 		next = -1;
 		TreeNode reconstructedHuffmanTree = decodeHuffmanTree(readBinaryFromFile(encodedHuffmanOutputPath).toString());
 		return decode(readBinaryFromFile(compressedOutputPath) , reconstructedHuffmanTree).toString();
-	}
-
-	public static void main(String[] args) throws IOException {
-		File f = new File("D:\\Compression\\note.txt");
-		String encoded = new String(Files.readString(Path.of(f.getAbsolutePath())));
-		System.out.println(encoded.length());
-//		String encoded = "AAAABBBBBCD";
-		long start = System.currentTimeMillis();
-		compress(encoded, "D:\\Compression\\outputCompressed.txt", "D:\\Compression\\outputHuffman.txt");
-		decompress("D:\\Compression\\outputCompressed.txt", "D:\\Compression\\outputHuffman.txt");
-		long end = System.currentTimeMillis();
-		System.out.println("total time  "+(end - start));
 	}
 }
 
