@@ -1,11 +1,16 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.PriorityQueue;
 
 public abstract class Compression {
 	private final static int NUMBER_CHAR = 256;
@@ -25,36 +30,44 @@ public abstract class Compression {
 		fillReplacementTable(root.rightChild, replacementTable, code + "1");
 	}
 
-	
+	private static StringBuilder charToBinaryString(char c) {
+		StringBuilder result = new StringBuilder();
+		String binary = Integer.toBinaryString(c & 0xFF);
+		for(int i = 0 ; i < (8 - binary.length()) ; i++) {
+			result.append('0');
+		}
+		result.append(binary);
+		return result;
+	}
 	/************************ File Handling ******************/
-	
-	private static void writeBinaryToFile(String binary, String filePath) throws IOException {
+	// DONE
+	private static void writeBinaryToFile(StringBuilder binary, String filePath) throws IOException {
 		FileOutputStream fileOS = new FileOutputStream(filePath);
 		DataOutputStream dataOS = new DataOutputStream(fileOS);
 		byte flag = 0;
-		String toInt = "";
+		byte toByte = 0;
+		byte count = 7;
 		byte remainder = (byte) (binary.length() % 8);
 		if (remainder != 0) {
 			flag = (byte) (8 - remainder);
 		}
 		dataOS.writeByte(flag);
 		for (int i = 0; i < binary.length(); i++) {
-			toInt += binary.charAt(i);
-			// everytime you concat. 8 bits write them as a byte to the file
-			if ((i + 1) % 8 == 0) {
-				dataOS.writeByte(Integer.parseInt(toInt, 2));
-				toInt = "";
+			if (binary.charAt(i) == '1') {
+				toByte |= (1 << count);
 			}
+			// everytime you concat. 8 bits write them as a byte to the file
+			if (count == 0) {
+				dataOS.writeByte(toByte);
+				toByte = 0;
+				count = 8;
+			}
+			count--;
 		}
 		// if the string length is not divisible by 8 the previous loop will terminate
 		// with some bits not added
 		// so pad and add the rest of the bits in that case
-		for (; flag != 0; flag--) {
-			toInt += '0';
-			if (flag == 1) {
-				dataOS.writeByte(Integer.parseInt(toInt, 2));
-			}
-		}
+		dataOS.writeByte(toByte);
 		dataOS.close();
 	}
 
@@ -70,7 +83,7 @@ public abstract class Compression {
 		dataIS.close();
 		char flag = read[0];
 		for (int i = 1; i < count; i++) {
-			encoded.append(String.format("%8s", Integer.toBinaryString(read[i] & 0xFF)).replace(' ', '0'));
+			encoded.append(charToBinaryString(read[i]));
 		}
 		if (flag != 0) {
 			encoded.delete(encoded.length() - flag, encoded.length());
@@ -78,12 +91,13 @@ public abstract class Compression {
 		return encoded;
 	}
 
-	
 	/******************** TREE STROING AND READING ******************/
 
 	private static void encodeHuffmanTree(TreeNode root, StringBuilder s) {
+		// O(n)
 		if (root instanceof Leaf) {
 			s.append('0');
+			// O(1) since we are appending a single character
 			s.append(((Leaf) root).getCharacter());
 			return;
 		} else {
@@ -93,9 +107,10 @@ public abstract class Compression {
 		}
 	}
 
-	private static String binarfyHuffmanTree(TreeNode huffmanRoot) {
+	private static StringBuilder binarfyHuffmanTree(TreeNode huffmanRoot) {
 		StringBuilder sb = new StringBuilder();
 		StringBuilder temp = new StringBuilder();
+		// O(n)
 		encodeHuffmanTree(huffmanRoot, sb);
 		char current;
 		for (int i = 0; i < sb.length() - 1; i++) {
@@ -105,12 +120,13 @@ public abstract class Compression {
 
 			} else {
 				temp.append(current);
-				temp.append(String.format("%8s", Integer.toBinaryString(sb.charAt(++i))).replace(' ', '0'));
+				temp.append(charToBinaryString(sb.charAt(++i)));
 			}
 		}
-		return temp.toString();
+		return temp;
 	}
-	
+
+	// DONE
 	private static TreeNode decodeHuffmanTree(String encoded) {
 		// next should start from -1;
 		TreeNode decodedRoot;
@@ -120,15 +136,19 @@ public abstract class Compression {
 
 		}
 		if (encoded.charAt(next) == '0') {
-			decodedRoot = new Leaf(' ', 3);
-			String toChar = "";
+			decodedRoot = new Leaf();
+			char currentChar = 0;
+			char count = 7;
 			for (int i = next + 1; i < next + 9; i++) {
-				toChar += encoded.charAt(i);
+				if (encoded.charAt(i) == '1') {
+					currentChar |= (1 << count);
+				}
+				count--;
 			}
-			((Leaf) decodedRoot).setCharacter((char) Integer.parseInt(toChar, 2));
+			((Leaf) decodedRoot).setCharacter(currentChar);
 			next = next + 8;
 		} else {
-			decodedRoot = new TreeNode(10);
+			decodedRoot = new TreeNode();
 			decodedRoot.leftChild = decodeHuffmanTree(encoded);
 			decodedRoot.rightChild = decodeHuffmanTree(encoded);
 		}
@@ -137,44 +157,33 @@ public abstract class Compression {
 	}
 
 	/******************** ENCODING AND DECODING *******************/
-
-	private static String encode(String s) {
+	// DONE
+	private static StringBuilder encode(String s) {
 		int[] freqArray = new int[NUMBER_CHAR];
 		String[] replacementTable = new String[NUMBER_CHAR];
-		ArrayList<TreeNode> nodes = new ArrayList<TreeNode>();
+		PriorityQueue<TreeNode> nodes = new PriorityQueue<TreeNode>();
 		StringBuilder encoded = new StringBuilder();
 		for (int i = 0; i < s.length(); i++) {
 			freqArray[s.charAt(i)]++;
 		}
+		// fill the heap
 		for (int i = 0; i < NUMBER_CHAR; i++) {
 			if (freqArray[i] != 0) {
 				nodes.add(new Leaf((char) i, freqArray[i]));
 			}
 		}
-		// Sort the nodes in ascending order to begin constructing the tree
-		Collections.sort(nodes);
-
-		// Creating the HuffMan Tree
-		// As long as we haven't created a root keep going
 		while (nodes.size() != 1) {
-			TreeNode combined = new TreeNode(nodes.remove(0), nodes.remove(0));
-			// finds the position at which the node shall be inserted to keep the order
-			int i = 0;
-			while (i < nodes.size()) {
-				if (nodes.get(i).compareTo(combined) != -1) {
-					break;
-				}
-				i++;
-			}
-			nodes.add(i, combined);
+			// remove the two smallest elements in the heap
+			TreeNode combined = new TreeNode(nodes.poll(), nodes.poll());
+			nodes.add(combined);
 		}
-		huffmanRoot = nodes.get(0);
+		huffmanRoot = nodes.poll();
 		fillReplacementTable(huffmanRoot, replacementTable, "");
 
 		for (int i = 0; i < s.length(); i++) {
 			encoded.append(replacementTable[s.charAt(i)]);
 		}
-		return encoded.toString();
+		return encoded;
 	}
 
 	private static StringBuilder decode(StringBuilder encoded, TreeNode huffmanRoot) {
@@ -197,12 +206,13 @@ public abstract class Compression {
 	}
 
 	/********************************* FINAL METHODS *************************/
+
 	public static void compress(String xmlContent, String compressedOutputPath, String encodedHuffmanOutputPath)
 			throws IOException {
 		huffmanRoot = null;
-		String encodedXML = encode(xmlContent);
-		writeBinaryToFile(encodedXML, compressedOutputPath);
-		String encodedHuffman = binarfyHuffmanTree(huffmanRoot);
+		StringBuilder encodedXML = encode(xmlContent); // O(NlogN)
+		writeBinaryToFile(encodedXML, compressedOutputPath); // O(N)
+		StringBuilder encodedHuffman = binarfyHuffmanTree(huffmanRoot); // O(N)
 		writeBinaryToFile(encodedHuffman, encodedHuffmanOutputPath);
 	}
 
@@ -212,6 +222,17 @@ public abstract class Compression {
 		return decode(readBinaryFromFile(compressedOutputPath) , reconstructedHuffmanTree).toString();
 	}
 
+	public static void main(String[] args) throws IOException {
+		File f = new File("D:\\Compression\\note.txt");
+		String encoded = new String(Files.readString(Path.of(f.getAbsolutePath())));
+		System.out.println(encoded.length());
+//		String encoded = "AAAABBBBBCD";
+		long start = System.currentTimeMillis();
+		compress(encoded, "D:\\Compression\\outputCompressed.txt", "D:\\Compression\\outputHuffman.txt");
+		decompress("D:\\Compression\\outputCompressed.txt", "D:\\Compression\\outputHuffman.txt");
+		long end = System.currentTimeMillis();
+		System.out.println("total time  "+(end - start));
+	}
 }
 
 /************************** TREE IMPLEMENTATION ************************/
@@ -232,6 +253,12 @@ class TreeNode implements Comparable<TreeNode> {
 		frequency = freq;
 		leftChild = null;
 		rightChild = null;
+	}
+
+	public TreeNode() {
+		leftChild = null;
+		rightChild = null;
+		frequency = 0;
 	}
 
 	// in-order tree traversal
@@ -269,15 +296,14 @@ class TreeNode implements Comparable<TreeNode> {
 class Leaf extends TreeNode {
 	private char character;
 
-	/**
-	 * Constructor creates a HuffMan tree leaf node
-	 * 
-	 * @param character the character to be added
-	 * @param frequency the number of occurrences
-	 */
 	public Leaf(char character, int frequency) {
 		super(frequency);
 		this.character = character;
+	}
+
+	public Leaf() {
+		super();
+		character = ' ';
 	}
 
 	public char getCharacter() {
