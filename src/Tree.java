@@ -50,6 +50,7 @@ static void fillTree_XML(Node node ,ArrayList<String>xmlarr,Index i) {
 	public static boolean isNumeric(String str) {
 		  return str.matches("-?\\d+(\\.\\d+)?");  //match a number with optional '-' and decimal.
 		}
+		/*
 static void printLeaf(Node leaf , StringBuffer s) { // print value and name
 	if (isNumeric(leaf.getTagData())) {
 		s.append(Node.spaces(leaf.getDepth())+"\""+ leaf.getTagName().substring(1, leaf.getTagName().length()-1) +"\": "
@@ -143,7 +144,7 @@ static void toJson(Node parent , StringBuffer s) {
 	
 	
 	
-}
+}*/
 	
 	
 	
