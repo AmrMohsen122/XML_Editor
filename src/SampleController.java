@@ -123,7 +123,7 @@ public class SampleController implements Initializable {
 		ArrayList<String> arrayListXml = new ArrayList<>();
 		content = Minifying.removeLines(content);
 		content = Minifying.minify(content);
-		Tree.parsing_xml(content, arrayListXml);
+		Tree.parsing_XML(content, arrayListXml);
 		for (int i = 0; i < arrayListXml.size(); i++) {
 			arrayListXml.set(i, Minifying.stringTrim(arrayListXml.get(i), '<', '>'));
 		}
@@ -134,9 +134,9 @@ public class SampleController implements Initializable {
 		Tree.filltree2(root, arrayListXml, i);
 
 		StringBuffer n = new StringBuffer();
-		Tree.toJson(root, n);
+		Node.conversion(root, n);
 		n = Tree.removeJsonEmptyLines(n);
-		n = Tree.formattingJson(n);
+		
 		XmlTextArea1.setText(n.toString());
 	}
 
