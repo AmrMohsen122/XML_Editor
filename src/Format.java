@@ -1,4 +1,4 @@
-import java.util.*
+import java.util.*;
 
 public class Format {
 	public static String Format(String unformatted) {
