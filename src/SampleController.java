@@ -1,4 +1,4 @@
-package application;
+package Main.java.application;
 
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -69,9 +69,9 @@ public class SampleController implements Initializable {
 	@FXML
 	private void correct(ActionEvent event) {
 		StringBuffer str = new StringBuffer(content);
-		ErrorDetect.error(ErrorDetect.removeSpace(str));
-		content = Format.Format(ErrorDetect.newXML.toString());
-		XmlTextArea1.setText(content);
+		str = ErrorDetect.removeLine(ErrorDetect.removeSpace(str));
+		ErrorDetect.error(str);
+		XmlTextArea1.setText(ErrorDetect.newXML.toString());
 	}
 
 	@FXML
@@ -81,9 +81,9 @@ public class SampleController implements Initializable {
 		File selected = choose.showDialog(null);
 		try {
 
-			File f1 = new File(selected.getAbsolutePath() + "output_" + currentFileName);
+			File f1 = new File(selected.getAbsolutePath() , "output_" + currentFileName);
 			f1.createNewFile();
-			File f2 = new File(selected.getAbsolutePath() + "huffman_" + currentFileName);
+			File f2 = new File(selected.getAbsolutePath() , "huffman_" + currentFileName);
 			f2.createNewFile();
 			if (!content.equals("")) {
 				Compression.compress(content, f1.getAbsolutePath(), f2.getAbsolutePath());
@@ -136,7 +136,6 @@ public class SampleController implements Initializable {
 		StringBuffer n = new StringBuffer();
 		Node.conversion(root, n);
 		n = Tree.removeJsonEmptyLines(n);
-		
 		XmlTextArea1.setText(n.toString());
 	}
 
@@ -147,7 +146,8 @@ public class SampleController implements Initializable {
 
 	@FXML
 	private void minify(ActionEvent event) {
-		XmlTextArea1.setText(Minifying.minify(content));
+		String str = new String(content);
+		XmlTextArea1.setText(Minifying.minify(str));
 	}
 
 	@FXML
@@ -166,7 +166,7 @@ public class SampleController implements Initializable {
 
 				if (j < ErrorDetect.errorIndecies.size() && count == ErrorDetect.errorIndecies.get(j)) {
 
-					val.insert(i, "    <-------- Error Here!!!!");
+					val.insert(i, "    <-------- " + ErrorDetect.errorCodes.get(j) );
 					for (; i < val.length() && val.charAt(i) != 10; i++)
 						;
 
@@ -187,7 +187,7 @@ public class SampleController implements Initializable {
 		File selected = choose.showDialog(null);
 		try {
 
-			File f1 = new File(selected.getAbsolutePath()+"SavedFile.txt");
+			File f1 = new File(selected.getAbsolutePath() , "SavedFile.txt");
 			f1.createNewFile();
 			try{
 				  // Create file 
