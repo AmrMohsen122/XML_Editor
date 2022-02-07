@@ -7,9 +7,9 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.SampleController">
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.demo3.SampleController">
    <bottom>
-      <AnchorPane prefHeight="768.0" prefWidth="1000.0" style="-fx-background-image: url('file:src/main/resources/application/bg.jpg'); -fx-background-color: #363636;" BorderPane.alignment="CENTER">
+      <AnchorPane prefHeight="768.0" prefWidth="1000.0" style="-fx-background-color: #363636;" BorderPane.alignment="CENTER">
          <children>
             <TextArea fx:id="XmlTextArea" layoutX="18.0" layoutY="70.0" prefHeight="628.0" prefWidth="483.0" />
             <TextField alignment="CENTER" layoutX="229.0" layoutY="39.0" prefHeight="31.0" prefWidth="62.0" text="XML">
@@ -27,6 +27,7 @@
             <TextArea fx:id="XmlTextArea1" layoutX="501.0" layoutY="70.0" prefHeight="628.0" prefWidth="483.0" />
             <Button fx:id="DeCompressbtn" layoutX="641.0" layoutY="711.0" mnemonicParsing="false" onAction="#DeCompress" text="Decompress" />
             <Button fx:id="saveBtn" layoutX="34.0" layoutY="-1.0" mnemonicParsing="false" onAction="#save" text="Save" />
+            <Button fx:id="GraphBtn" layoutX="849.0" layoutY="711.0" mnemonicParsing="false" onAction="#graph" text="Graph" />
          </children>
       </AnchorPane>
    </bottom>
