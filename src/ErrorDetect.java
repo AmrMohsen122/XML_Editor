@@ -6,16 +6,7 @@ public class ErrorDetect {
     static StringBuffer newXML;
     static Vector<Integer> errorIndecies = new Vector<Integer>(1);
     static Vector<String> errorCodes = new Vector<String>();
-    //static int push_pop_index = 0;
-    
-    /*
-        static int incrementIndex(int index, String str){
-        
-            for(int i = 0;  i<= str.length();i++)
-            index++;
-            return index;
-        }
-     */
+   
     static int findPreviousLine(int index, StringBuffer str) {
         int j = index;
         for (; str.charAt(j) != 10; j--);
@@ -55,25 +46,29 @@ public class ErrorDetect {
 
         for (int i = 1; i < formattedXML.length() - 1; i++) {
             //32 is ascii code for blank space and 10 is ascii code for new lines
-           if(formattedXML.charAt(i)==10 &&(formattedXML.charAt(i +1)==10||formattedXML.charAt(i-1)==10))
-              formattedXML.deleteCharAt(i);
-            if(i >= 2&&formattedXML.charAt(i) == '/' &&formattedXML.charAt(i - 2) == 10&& Character.isLetterOrDigit(formattedXML.charAt(i - 3)) || formattedXML.charAt(i) == '>' && i <formattedXML.length()-1 && formattedXML.charAt(i + 1)==10&&Character.isLetterOrDigit(formattedXML.charAt(i + 2))){
-            if(formattedXML.charAt(i - 2)==10)
-                formattedXML.deleteCharAt(i - 2);
-            
-            if(formattedXML.charAt(i + 1)==10){
-                boolean tag = false;
-                int j = i;
-                j++;
-                j++;
-                for(;formattedXML.charAt(j)!=10;j++)
-                    if(formattedXML.charAt(j) == '<')
-                        tag = true;
-                if(!tag)
-                formattedXML.deleteCharAt(i + 1);
+            if(formattedXML.charAt(i)==10 &&(formattedXML.charAt(i +2)==10||formattedXML.charAt(i-2)==10)){
+                formattedXML.deleteCharAt(i);
+                formattedXML.deleteCharAt(i-1);
             }
+            if(i >= 2&&formattedXML.charAt(i) == '/' &&formattedXML.charAt(i - 2) == 10&& Character.isLetterOrDigit(formattedXML.charAt(i - 4)) || formattedXML.charAt(i) == '>' && i <formattedXML.length()-2 && formattedXML.charAt(i + 2)==10&&Character.isLetterOrDigit(formattedXML.charAt(i + 3))){
+                if(formattedXML.charAt(i - 2)==10){
+                    formattedXML.deleteCharAt(i - 2);
+                    formattedXML.deleteCharAt(i - 3);
+                }
+                if(formattedXML.charAt(i + 2)==10){
+                    boolean tag = false;
+                    int j = i;
+                    j=j+3;
+                    for(;formattedXML.charAt(j)!=10;j++)
+                        if(formattedXML.charAt(j) == '<')
+                            tag = true;
+                    if(!tag){
+                        formattedXML.deleteCharAt(i + 2);
+                        formattedXML.deleteCharAt(i+1);
+                    }
+                }
             }
-           
+
 
         }
 
