@@ -1,22 +1,36 @@
-package Main.java.application;
+package com.example.demo3;
 
+
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import javafx.event.*;
-import javafx.fxml.*;
-import java.util.*;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import org.graphstream.graph.Graph;
+import org.graphstream.graph.implementations.MultiGraph;
+import org.graphstream.ui.fx_viewer.FxViewPanel;
+import org.graphstream.ui.fx_viewer.FxViewer;
+import org.graphstream.ui.javafx.FxGraphRenderer;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.*;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.ResourceBundle;
 
 public class SampleController implements Initializable {
+	@FXML
+	private Button GraphBtn;
 	@FXML
 	private Label label;
 	@FXML
@@ -121,9 +135,10 @@ public class SampleController implements Initializable {
 	@FXML
 	private void Xml_Json(ActionEvent event) {
 		ArrayList<String> arrayListXml = new ArrayList<>();
-		content = Minifying.removeLines(content);
-		content = Minifying.minify(content);
-		Tree.parsing_XML(content, arrayListXml);
+		String str;
+		str = Minifying.removeLines(content);
+		str = Minifying.minify(str);
+		Tree.parsing_XML(str, arrayListXml);
 		for (int i = 0; i < arrayListXml.size(); i++) {
 			arrayListXml.set(i, Minifying.stringTrim(arrayListXml.get(i), '<', '>'));
 		}
@@ -152,9 +167,12 @@ public class SampleController implements Initializable {
 
 	@FXML
 	private void validate(ActionEvent event) {
-
-		StringBuffer val = new StringBuffer(ErrorDetect.removeSpace(new StringBuffer(content)));
-		ErrorDetect.error(val);
+		ErrorDetect.errorIndecies.clear();
+		ErrorDetect.errorCodes.clear();
+		StringBuffer str = ErrorDetect.removeSpace(new StringBuffer(content));
+		str = ErrorDetect.removeLine(str);
+		ErrorDetect.error(str);
+		StringBuffer val = new StringBuffer(str);
 		if (ErrorDetect.errorIndecies.size() != 0) {
 			int count = 0;
 			int j = 0;
@@ -206,6 +224,64 @@ public class SampleController implements Initializable {
 			e.printStackTrace();
 		}
 		//XmlTextArea1.setText("The compressed files is in: " + selected.getAbsolutePath());
+	}
+	@FXML
+	private void graph(ActionEvent event) {
+
+		ArrayList<user> users = new ArrayList();
+
+		user.new_parse(content,  users);
+
+		System.setProperty("org.graphstream.ui", "javafx");
+
+		Graph graph = new MultiGraph("Network");
+
+		graph.setAutoCreate(true);
+		graph.setStrict(false);
+
+		graph.display();
+
+
+		FxViewer view = new FxViewer(graph, FxViewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
+		view.enableAutoLayout();
+		FxViewPanel panel = (FxViewPanel)view.addDefaultView(false, new FxGraphRenderer());
+
+		for (int i = 0; i < users.size(); i++) {
+
+			for (int j = 0; j < users.get(i).followers.size(); j++) {
+				graph.addEdge(users.get(i).id+users.get(i).followers.get(j).toString(), String.valueOf(users.get(i).id), users.get(i).followers.get(j).toString(), true);
+			}
+
+		}
+		for (org.graphstream.graph.Node node : graph) {
+
+			node.setAttribute("ui.label", node.getId());
+
+
+
+			node.setAttribute("ui.style", "fill-color:black;");
+			node.setAttribute("ui.style", "text-mode:normal;");
+			node.setAttribute("ui.style", "text-background-mode:rounded-box;");
+			node.setAttribute("ui.style", "text-background-color:white;");
+			node.setAttribute("ui.style", "text-size:30px;");
+			node.setAttribute("ui.style", "size:15px, 15px;");
+
+			node.setAttribute("ui.style", "text-alignment:at-left;");
+			node.setAttribute("ui.style", "text-offset:-10px,20px;");
+
+
+		}
+		Stage window = new Stage();
+		window.initModality(Modality.APPLICATION_MODAL);
+		window.setTitle("Graph");
+		window.setMinWidth(250);
+
+
+
+		Scene scene = new Scene(panel,800,600);
+		window.setScene(scene);
+		window.show();
+
 	}
 	
 		
