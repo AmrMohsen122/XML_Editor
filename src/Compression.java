@@ -120,9 +120,6 @@ public abstract class Compression {
 		TreeNode decodedRoot;
 		next += 1;
 		// a leaf
-		if (next < encoded.length()) {
-
-		}
 		if (encoded.charAt(next) == '0') {
 			decodedRoot = new Leaf();
 			char currentChar = 0;
